@@ -1,0 +1,7 @@
+{
+  "name": "IVAN GUADERRAMA ART GALLERY",
+  "description": "Una aplicación para gestionar un catálogo de productos, permitiendo a los usuarios agregar, buscar y almacenar información de productos. Cuenta con una función impulsada por IA para generar automáticamente descripciones de productos atractivas.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
