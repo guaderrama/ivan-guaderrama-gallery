@@ -4,7 +4,7 @@ import type { Product, NewProduct, ProductCategory, ShippingSettings } from '@/f
 import type { NumberedProduct, Edition, NewNumberedProductData } from '@/features/numbered-editions/types';
 import type { MiniWork, NewMiniWork } from '@/features/mini-works/types';
 import { CATEGORIES } from '@/features/artwork-management/types';
-import { initialCatalog, initialShippingSettings, initialNumberedProducts, initialMiniWorks } from '@/shared/constants/data';
+import { initialShippingSettings } from '@/shared/constants/data';
 import { ProductCard, ProductDetailModal, ProductFormModal } from '@/features/artwork-management/components';
 import { SettingsModal, BulkUploadModal, SearchIcon, SettingsIcon, PlusIcon, UploadIcon, ArchiveBoxIcon, XIcon } from '@/shared/components';
 import { NumberedEditionsManager, AddNumberedProductModal, EditSeriesModal } from '@/features/numbered-editions/components';
@@ -13,6 +13,9 @@ import { useAuth } from '@/features/auth/context/AuthContext';
 import { LoginForm } from '@/features/auth/components/LoginForm';
 import { LogoutButton } from '@/features/auth/components/LogoutButton';
 import { UserBadge } from '@/features/auth/components/UserBadge';
+import { useArtworks } from '@/features/artwork-management/hooks/useArtworks';
+import { useNumberedEditions } from '@/features/numbered-editions/hooks/useNumberedEditions';
+import { useMiniWorks } from '@/features/mini-works/hooks/useMiniWorks';
 
 // 🔧 LAZY LOAD problematic components (AI features with external deps)
 const GenerateNameModal = lazy(() => import('@/features/ai-naming/components/GenerateNameModal'));
@@ -22,8 +25,11 @@ type ActiveTab = 'catalog' | 'seriadas' | 'miniWorks' | 'simulator';
 
 const App: React.FC = () => {
   // ALL HOOKS MUST BE AT THE TOP (React Rules of Hooks)
-  const { user, loading } = useAuth();
-  const [catalog, setCatalog] = useState<Product[]>(initialCatalog);
+  const { user, loading: authLoading } = useAuth();
+
+  // UI State (must be before Firestore hooks that depend on them)
+  const [showArchived, setShowArchived] = useState(false);
+  const [showArchivedMiniWorks, setShowArchivedMiniWorks] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
@@ -32,19 +38,46 @@ const App: React.FC = () => {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [shippingSettings, setShippingSettings] = useState<ShippingSettings>(initialShippingSettings);
   const [activeTab, setActiveTab] = useState<ActiveTab>('catalog');
-  const [showArchived, setShowArchived] = useState(false);
-
-  // State for Numbered Editions
-  const [numberedProducts, setNumberedProducts] = useState<NumberedProduct[]>(initialNumberedProducts);
   const [isAddNumberedProductModalOpen, setIsAddNumberedProductModalOpen] = useState(false);
   const [editingSeriesProduct, setEditingSeriesProduct] = useState<NumberedProduct | null>(null);
-
-  // State for Mini Works
-  const [miniWorks, setMiniWorks] = useState<MiniWork[]>(initialMiniWorks);
   const [isAddMiniWorkModalOpen, setIsAddMiniWorkModalOpen] = useState(false);
   const [isGenerateNameModalOpen, setIsGenerateNameModalOpen] = useState(false);
   const [editingMiniWork, setEditingMiniWork] = useState<MiniWork | null>(null);
-  const [showArchivedMiniWorks, setShowArchivedMiniWorks] = useState(false);
+
+  // Firestore hooks (use state from above)
+  const {
+    artworks: catalog,
+    loading: artworksLoading,
+    error: artworksError,
+    createArtwork,
+    updateArtwork,
+    deleteArtwork,
+    archiveArtwork,
+  } = useArtworks({ status: showArchived ? 'all' : 'active' });
+
+  const {
+    series: numberedProducts,
+    loading: editionsLoading,
+    error: editionsError,
+    createSeries,
+    updateSeries,
+    archiveSeries,
+    deleteSeries,
+    createEdition,
+    updateEdition,
+    archiveEdition,
+    deleteEdition,
+  } = useNumberedEditions();
+
+  const {
+    miniWorks,
+    loading: miniWorksLoading,
+    error: miniWorksError,
+    createMiniWork,
+    updateMiniWork,
+    deleteMiniWork,
+    archiveMiniWork,
+  } = useMiniWorks({ status: showArchivedMiniWorks ? 'all' : 'active' });
 
   // State for Bulk Upload
   const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = useState(false);
@@ -94,33 +127,43 @@ const App: React.FC = () => {
   // ============= Event Handlers =============
 
   // Catalog handlers
-  const handleAddProduct = (newProduct: NewProduct) => {
-    const product: Product = {
-      id: Date.now(),
-      ...newProduct,
-      stock: newProduct.stock || 0,
-      images: newProduct.images || [],
-      status: 'active',
-      createdAt: new Date().toISOString(),
-    };
-    setCatalog([...catalog, product]);
-    setIsFormModalOpen(false);
+  const handleAddProduct = async (newProduct: NewProduct) => {
+    try {
+      await createArtwork(newProduct);
+      setIsFormModalOpen(false);
+    } catch (error) {
+      console.error('Error adding product:', error);
+      alert('Error al agregar la obra. Por favor intenta de nuevo.');
+    }
   };
 
-  const handleEditProduct = (updatedProduct: Product) => {
-    setCatalog(catalog.map(p => p.id === updatedProduct.id ? updatedProduct : p));
-    setEditingProduct(null);
+  const handleEditProduct = async (updatedProduct: Product) => {
+    try {
+      await updateArtwork(updatedProduct.id.toString(), updatedProduct);
+      setEditingProduct(null);
+    } catch (error) {
+      console.error('Error updating product:', error);
+      alert('Error al actualizar la obra. Por favor intenta de nuevo.');
+    }
   };
 
-  const handleDeleteProduct = (id: number) => {
-    setCatalog(catalog.filter(p => p.id !== id));
-    setViewingProduct(null);
+  const handleDeleteProduct = async (id: number) => {
+    try {
+      await deleteArtwork(id.toString());
+      setViewingProduct(null);
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      alert('Error al eliminar la obra. Por favor intenta de nuevo.');
+    }
   };
 
-  const handleArchiveProduct = (id: number) => {
-    setCatalog(catalog.map(p =>
-      p.id === id ? { ...p, status: p.status === 'archived' ? 'active' : 'archived' as Product['status'] } : p
-    ));
+  const handleArchiveProduct = async (id: number) => {
+    try {
+      await archiveArtwork(id.toString());
+    } catch (error) {
+      console.error('Error archiving product:', error);
+      alert('Error al archivar la obra. Por favor intenta de nuevo.');
+    }
   };
 
   const handleSaveSettings = (settings: ShippingSettings) => {
@@ -128,128 +171,139 @@ const App: React.FC = () => {
   };
 
   // Numbered Products handlers
-  const handleAddNumberedProduct = (data: NewNumberedProductData) => {
-    const newProduct: NumberedProduct = {
-      id: Date.now(),
-      ...data,
-      editions: [],
-      seriesStatus: 'active',
-      createdAt: new Date().toISOString()
-    };
-    setNumberedProducts([...numberedProducts, newProduct]);
-    setIsAddNumberedProductModalOpen(false);
+  const handleAddNumberedProduct = async (data: NewNumberedProductData) => {
+    try {
+      await createSeries(data);
+      setIsAddNumberedProductModalOpen(false);
+    } catch (error) {
+      console.error('Error adding series:', error);
+      alert('Error al agregar la serie. Por favor intenta de nuevo.');
+    }
   };
 
-  const handleSaveEdition = (productId: number, edition: Edition) => {
-    setNumberedProducts(numberedProducts.map(np => {
-      if (np.id === productId) {
-        const existingIndex = np.editions.findIndex(e => e.id === edition.id);
-        if (existingIndex >= 0) {
-          return {
-            ...np,
-            editions: np.editions.map(e => e.id === edition.id ? edition : e)
-          };
-        } else {
-          return {
-            ...np,
-            editions: [...np.editions, edition]
-          };
-        }
+  const handleSaveEdition = async (productId: number, edition: Edition) => {
+    try {
+      // Check if it's a new edition (no existing id in Firestore) or an update
+      const existingSeries = numberedProducts.find(np => np.id === productId);
+      if (!existingSeries) {
+        throw new Error('Series not found');
       }
-      return np;
-    }));
-  };
 
-  const handleArchiveEdition = (productId: number, editionId: number) => {
-    setNumberedProducts(numberedProducts.map(np => {
-      if (np.id === productId) {
-        return {
-          ...np,
-          editions: np.editions.map(e =>
-            e.id === editionId
-              ? { ...e, status: e.status === 'archived' ? 'active' : 'archived' as Edition['status'] }
-              : e
-          )
-        };
+      const existingEdition = existingSeries.editions.find(e => e.id === edition.id);
+
+      if (existingEdition) {
+        // Update existing edition
+        await updateEdition(productId, edition.id, edition);
+      } else {
+        // Create new edition
+        const { id, status, createdAt, ...editionData } = edition;
+        await createEdition(productId, editionData);
       }
-      return np;
-    }));
+    } catch (error) {
+      console.error('Error saving edition:', error);
+      alert('Error al guardar la edición. Por favor intenta de nuevo.');
+    }
   };
 
-  const handleDeleteEdition = (productId: number, editionId: number) => {
-    setNumberedProducts(numberedProducts.map(np => {
-      if (np.id === productId) {
-        return {
-          ...np,
-          editions: np.editions.filter(e => e.id !== editionId)
-        };
-      }
-      return np;
-    }));
+  const handleArchiveEdition = async (productId: number, editionId: number) => {
+    try {
+      await archiveEdition(productId, editionId);
+    } catch (error) {
+      console.error('Error archiving edition:', error);
+      alert('Error al archivar la edición. Por favor intenta de nuevo.');
+    }
   };
 
-  const handleArchiveSeries = (productId: number) => {
-    setNumberedProducts(numberedProducts.map(np =>
-      np.id === productId
-        ? { ...np, seriesStatus: np.seriesStatus === 'archived' ? 'active' : 'archived' as NumberedProduct['seriesStatus'] }
-        : np
-    ));
+  const handleDeleteEdition = async (productId: number, editionId: number) => {
+    try {
+      await deleteEdition(productId, editionId);
+    } catch (error) {
+      console.error('Error deleting edition:', error);
+      alert('Error al eliminar la edición. Por favor intenta de nuevo.');
+    }
   };
 
-  const handleDeleteSeries = (productId: number) => {
-    setNumberedProducts(numberedProducts.filter(np => np.id !== productId));
+  const handleArchiveSeries = async (productId: number) => {
+    try {
+      await archiveSeries(productId);
+    } catch (error) {
+      console.error('Error archiving series:', error);
+      alert('Error al archivar la serie. Por favor intenta de nuevo.');
+    }
   };
 
-  const handleEditSeries = (productId: number, updates: { seriesName: string; category: ProductCategory; description: string; basePrice: number }) => {
-    setNumberedProducts(numberedProducts.map(np =>
-      np.id === productId ? { ...np, ...updates } : np
-    ));
-    setEditingSeriesProduct(null);
+  const handleDeleteSeries = async (productId: number) => {
+    try {
+      await deleteSeries(productId);
+    } catch (error) {
+      console.error('Error deleting series:', error);
+      alert('Error al eliminar la serie. Por favor intenta de nuevo.');
+    }
+  };
+
+  const handleEditSeries = async (productId: number, updates: { seriesName: string; category: ProductCategory; description: string; basePrice: number }) => {
+    try {
+      await updateSeries(productId, updates);
+      setEditingSeriesProduct(null);
+    } catch (error) {
+      console.error('Error updating series:', error);
+      alert('Error al actualizar la serie. Por favor intenta de nuevo.');
+    }
   };
 
   // Mini Works handlers
-  const handleAddMiniWork = (newWork: NewMiniWork) => {
-    const work: MiniWork = {
-      id: Date.now(),
-      ...newWork,
-      status: 'active',
-      createdAt: new Date().toISOString(),
-    };
-    setMiniWorks([...miniWorks, work]);
-    setIsAddMiniWorkModalOpen(false);
+  const handleAddMiniWork = async (newWork: NewMiniWork) => {
+    try {
+      await createMiniWork(newWork);
+      setIsAddMiniWorkModalOpen(false);
+    } catch (error) {
+      console.error('Error adding mini work:', error);
+      alert('Error al agregar la mini obra. Por favor intenta de nuevo.');
+    }
   };
 
-  const handleEditMiniWork = (updatedWork: MiniWork) => {
-    setMiniWorks(miniWorks.map(w => w.id === updatedWork.id ? updatedWork : w));
-    setEditingMiniWork(null);
+  const handleEditMiniWork = async (updatedWork: MiniWork) => {
+    try {
+      await updateMiniWork(updatedWork.id, updatedWork);
+      setEditingMiniWork(null);
+    } catch (error) {
+      console.error('Error updating mini work:', error);
+      alert('Error al actualizar la mini obra. Por favor intenta de nuevo.');
+    }
   };
 
-  const handleDeleteMiniWork = (id: number) => {
-    setMiniWorks(miniWorks.filter(w => w.id !== id));
+  const handleDeleteMiniWork = async (id: number) => {
+    try {
+      await deleteMiniWork(id);
+    } catch (error) {
+      console.error('Error deleting mini work:', error);
+      alert('Error al eliminar la mini obra. Por favor intenta de nuevo.');
+    }
   };
 
-  const handleArchiveMiniWork = (id: number) => {
-    setMiniWorks(miniWorks.map(w =>
-      w.id === id ? { ...w, status: w.status === 'archived' ? 'active' : 'archived' as MiniWork['status'] } : w
-    ));
+  const handleArchiveMiniWork = async (id: number) => {
+    try {
+      await archiveMiniWork(id);
+    } catch (error) {
+      console.error('Error archiving mini work:', error);
+      alert('Error al archivar la mini obra. Por favor intenta de nuevo.');
+    }
   };
 
-  const handleBulkUpload = (products: NewProduct[]) => {
-    const newProducts: Product[] = products.map(p => ({
-      id: Date.now() + Math.random(),
-      ...p,
-      stock: p.stock || 0,
-      images: p.images || [],
-      status: 'active',
-      createdAt: new Date().toISOString(),
-    }));
-    setCatalog([...catalog, ...newProducts]);
-    setIsBulkUploadModalOpen(false);
+  const handleBulkUpload = async (products: NewProduct[]) => {
+    try {
+      // Create all products in parallel
+      await Promise.all(products.map(p => createArtwork(p)));
+      setIsBulkUploadModalOpen(false);
+    } catch (error) {
+      console.error('Error bulk uploading products:', error);
+      alert('Error al subir las obras. Por favor intenta de nuevo.');
+    }
   };
 
   // ============= Early Returns (After ALL hooks) =============
 
-  if (loading) {
+  if (authLoading || artworksLoading || editionsLoading || miniWorksLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
@@ -271,6 +325,32 @@ const App: React.FC = () => {
             <p className="text-sm text-gray-500 tracking-widest">ART GALLERY</p>
           </div>
           <LoginForm />
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if Firestore connection fails
+  if (artworksError || editionsError || miniWorksError) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-4">
+            <h2 className="text-lg font-semibold text-red-900 mb-2">Error de conexión</h2>
+            <p className="text-red-700 mb-4">
+              No se pudo conectar con la base de datos. Por favor verifica tu conexión e intenta de nuevo.
+            </p>
+            {artworksError && <p className="text-sm text-red-600 mb-2">Catálogo: {artworksError}</p>}
+            {editionsError && <p className="text-sm text-red-600 mb-2">Ediciones: {editionsError}</p>}
+            {miniWorksError && <p className="text-sm text-red-600 mb-2">Mini Obras: {miniWorksError}</p>}
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors mt-4"
+            >
+              Reintentar
+            </button>
+          </div>
+          <LogoutButton />
         </div>
       </div>
     );

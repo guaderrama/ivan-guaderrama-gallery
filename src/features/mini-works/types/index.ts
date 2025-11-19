@@ -1,9 +1,12 @@
+export type MiniWorkStatus = 'active' | 'archived' | 'deleted';
+
 export interface MiniWork {
-  id: number;
+  id: string;
   name: string;
   sku: string;
   imageUrl?: string;
-  archived?: boolean;
+  status: MiniWorkStatus;
+  createdAt: string;
 }
 
-export type NewMiniWork = Omit<MiniWork, 'id'>;
+export type NewMiniWork = Omit<MiniWork, 'id' | 'status' | 'createdAt'>;

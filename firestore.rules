@@ -13,21 +13,51 @@ service cloud.firestore {
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
-    // Artworks collection
+    // Artworks collection (Catálogo General)
     match /artworks/{artworkId} {
-      // Anyone can read active artworks (public gallery)
-      allow read: if resource.data.status == 'active' || isAdmin();
-      
+      // Allow queries (list) but filter results
+      allow list: if true;
+      // Only return specific docs if active or admin
+      allow get: if resource.data.status == 'active' || isAdmin();
       // Only admins can create/update/delete
       allow create, update, delete: if isAdmin();
-      
-      // Numbered editions subcollection
+
+      // Numbered editions subcollection (old structure, keeping for compatibility)
       match /pieces/{pieceId} {
-        allow read: if resource.data.status == 'active' || isAdmin();
+        allow list: if true;
+        allow get: if resource.data.status == 'active' || isAdmin();
         allow create, update, delete: if isAdmin();
       }
     }
-    
+
+    // Numbered Editions collection (new structure with subcollections)
+    match /numbered-editions/{seriesId} {
+      // Allow queries (list) but filter results
+      allow list: if true;
+      // Only return specific docs if active or admin
+      allow get: if resource.data.seriesStatus == 'active' || isAdmin();
+      // Only admins can create/update/delete series
+      allow create, update, delete: if isAdmin();
+
+      // Editions subcollection
+      match /editions/{editionId} {
+        // Allow queries (list) but filter results
+        allow list: if true;
+        allow get: if resource.data.status == 'active' || isAdmin();
+        allow create, update, delete: if isAdmin();
+      }
+    }
+
+    // Mini Works collection
+    match /mini-works/{workId} {
+      // Allow queries (list) but filter results
+      allow list: if true;
+      // Only return specific docs if active or admin
+      allow get: if resource.data.status == 'active' || isAdmin();
+      // Only admins can create/update/delete
+      allow create, update, delete: if isAdmin();
+    }
+
     // Generated names collection (AI suggestions)
     match /generatedNames/{nameId} {
       allow read: if isAdmin();

@@ -13,7 +13,7 @@ export type ProductCategory = typeof CATEGORIES[number];
 export type ArtworkStatus = 'active' | 'archived' | 'deleted';
 
 export interface Product {
-  id: number;
+  id: string;
   nombre: string;
   descripcion: string;
   detalles: string;

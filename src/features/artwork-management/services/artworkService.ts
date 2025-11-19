@@ -37,7 +37,7 @@ function docToProduct(doc: QueryDocumentSnapshot<DocumentData>): Product {
   const data = doc.data();
   return {
     ...data,
-    id: parseInt(doc.id) || Date.now(), // Keep numeric ID for compatibility
+    id: doc.id,
     createdAt: data.createdAt?.toDate?.() || data.createdAt,
     updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
   } as Product;

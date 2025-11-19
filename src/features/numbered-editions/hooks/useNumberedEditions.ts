@@ -1,0 +1,258 @@
+import { useState, useEffect, useCallback } from 'react';
+import { editionsService } from '../services/editionsService';
+import type { NumberedProduct, Edition, NewNumberedProductData, NewEditionData } from '../types';
+
+interface UseNumberedEditionsReturn {
+  /** List of series with their editions */
+  series: NumberedProduct[];
+  /** Loading state */
+  loading: boolean;
+  /** Error message if any */
+  error: string | null;
+  /** Create a new series */
+  createSeries: (seriesData: NewNumberedProductData) => Promise<string | null>;
+  /** Update a series */
+  updateSeries: (seriesId: number, updates: Partial<NumberedProduct>) => Promise<boolean>;
+  /** Archive/unarchive a series */
+  archiveSeries: (seriesId: number) => Promise<boolean>;
+  /** Delete a series (soft delete) */
+  deleteSeries: (seriesId: number) => Promise<boolean>;
+  /** Create a new edition in a series */
+  createEdition: (seriesId: number, editionData: NewEditionData) => Promise<string | null>;
+  /** Update an edition */
+  updateEdition: (seriesId: number, editionId: number, updates: Partial<Edition>) => Promise<boolean>;
+  /** Archive/unarchive an edition */
+  archiveEdition: (seriesId: number, editionId: number) => Promise<boolean>;
+  /** Delete an edition (soft delete) */
+  deleteEdition: (seriesId: number, editionId: number) => Promise<boolean>;
+  /** Refresh series manually */
+  refresh: () => Promise<void>;
+}
+
+/**
+ * Custom hook for managing numbered editions (series and individual editions) with Firestore
+ *
+ * Features:
+ * - Real-time subscriptions
+ * - CRUD operations for series and editions
+ * - Subcollections support
+ * - Loading and error states
+ * - Automatic cleanup
+ *
+ * @example
+ * ```tsx
+ * function SeriesList() {
+ *   const { series, loading, createSeries, createEdition } = useNumberedEditions();
+ *
+ *   if (loading) return <div>Loading...</div>;
+ *
+ *   return (
+ *     <div>
+ *       {series.map(s => (
+ *         <div key={s.id}>
+ *           <h3>{s.seriesName}</h3>
+ *           {s.editions.map(e => (
+ *             <p key={e.id}>Edition {e.editionNumber}</p>
+ *           ))}
+ *         </div>
+ *       ))}
+ *     </div>
+ *   );
+ * }
+ * ```
+ */
+export function useNumberedEditions(): UseNumberedEditionsReturn {
+  const [series, setSeries] = useState<NumberedProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch series (one-time)
+  const fetchSeries = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const data = await editionsService.getAllSeries();
+      setSeries(data);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to fetch series';
+      setError(message);
+      console.error('Error fetching series:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Setup real-time subscription
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+
+    let unsubscribe: (() => void) | undefined;
+
+    try {
+      unsubscribe = editionsService.subscribeToAllSeries((data) => {
+        setSeries(data);
+        setLoading(false);
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to subscribe to series';
+      setError(message);
+      setLoading(false);
+      console.error('Error subscribing to series:', err);
+    }
+
+    // Cleanup subscription on unmount
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, []);
+
+  // ============= SERIES OPERATIONS =============
+
+  // Create series
+  const createSeries = useCallback(async (seriesData: NewNumberedProductData): Promise<string | null> => {
+    try {
+      setError(null);
+      const id = await editionsService.createSeries(seriesData);
+      return id;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create series';
+      setError(message);
+      console.error('Error creating series:', err);
+      return null;
+    }
+  }, []);
+
+  // Update series
+  const updateSeries = useCallback(
+    async (seriesId: number, updates: Partial<NumberedProduct>): Promise<boolean> => {
+      try {
+        setError(null);
+        await editionsService.updateSeries(seriesId, updates);
+        return true;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to update series';
+        setError(message);
+        console.error('Error updating series:', err);
+        return false;
+      }
+    },
+    []
+  );
+
+  // Archive series
+  const archiveSeries = useCallback(async (seriesId: number): Promise<boolean> => {
+    try {
+      setError(null);
+      await editionsService.archiveSeries(seriesId);
+      return true;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to archive series';
+      setError(message);
+      console.error('Error archiving series:', err);
+      return false;
+    }
+  }, []);
+
+  // Delete series
+  const deleteSeries = useCallback(async (seriesId: number): Promise<boolean> => {
+    try {
+      setError(null);
+      await editionsService.deleteSeries(seriesId);
+      return true;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to delete series';
+      setError(message);
+      console.error('Error deleting series:', err);
+      return false;
+    }
+  }, []);
+
+  // ============= EDITIONS OPERATIONS =============
+
+  // Create edition
+  const createEdition = useCallback(
+    async (seriesId: number, editionData: NewEditionData): Promise<string | null> => {
+      try {
+        setError(null);
+        const id = await editionsService.createEdition(seriesId, editionData);
+        return id;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to create edition';
+        setError(message);
+        console.error('Error creating edition:', err);
+        return null;
+      }
+    },
+    []
+  );
+
+  // Update edition
+  const updateEdition = useCallback(
+    async (seriesId: number, editionId: number, updates: Partial<Edition>): Promise<boolean> => {
+      try {
+        setError(null);
+        await editionsService.updateEdition(seriesId, editionId, updates);
+        return true;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to update edition';
+        setError(message);
+        console.error('Error updating edition:', err);
+        return false;
+      }
+    },
+    []
+  );
+
+  // Archive edition
+  const archiveEdition = useCallback(
+    async (seriesId: number, editionId: number): Promise<boolean> => {
+      try {
+        setError(null);
+        await editionsService.archiveEdition(seriesId, editionId);
+        return true;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to archive edition';
+        setError(message);
+        console.error('Error archiving edition:', err);
+        return false;
+      }
+    },
+    []
+  );
+
+  // Delete edition
+  const deleteEdition = useCallback(
+    async (seriesId: number, editionId: number): Promise<boolean> => {
+      try {
+        setError(null);
+        await editionsService.deleteEdition(seriesId, editionId);
+        return true;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to delete edition';
+        setError(message);
+        console.error('Error deleting edition:', err);
+        return false;
+      }
+    },
+    []
+  );
+
+  return {
+    series,
+    loading,
+    error,
+    createSeries,
+    updateSeries,
+    archiveSeries,
+    deleteSeries,
+    createEdition,
+    updateEdition,
+    archiveEdition,
+    deleteEdition,
+    refresh: fetchSeries,
+  };
+}

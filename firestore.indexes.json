@@ -18,6 +18,30 @@
       ]
     },
     {
+      "collectionGroup": "numbered-editions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "seriesStatus", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "editions",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "editionNumber", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "mini-works",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "pieces",
       "queryScope": "COLLECTION_GROUP",
       "fields": [

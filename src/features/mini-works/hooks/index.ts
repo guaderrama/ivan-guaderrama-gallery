@@ -1,0 +1,1 @@
+export { useMiniWorks } from './useMiniWorks';
