@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - Firebase Auth</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .error { background: #fee; border: 1px solid #f00; padding: 10px; margin: 10px 0; }
+        .success { background: #efe; border: 1px solid #0f0; padding: 10px; margin: 10px 0; }
+        pre { background: #f0f0f0; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Firebase Auth Debug</h1>
+    <div id="status">Cargando...</div>
+    
+    <script type="module">
+        const statusDiv = document.getElementById('status');
+        
+        function log(msg, isError = false) {
+            const div = document.createElement('div');
+            div.className = isError ? 'error' : 'success';
+            div.innerHTML = msg;
+            statusDiv.appendChild(div);
+        }
+        
+        try {
+            log('✅ 1. JavaScript funcionando');
+            
+            // Intentar importar Firebase
+            const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
+            const { getAuth, signInWithEmailAndPassword } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+            
+            log('✅ 2. Firebase SDK cargado');
+            
+            // Config de Firebase
+            const firebaseConfig = {
+                apiKey: "AIzaSyDNH6Btw9Ntkhe2BZl4jPDW3RJq_U4EQFE",
+                authDomain: "ivan-guaderrama-gallery.firebaseapp.com",
+                projectId: "ivan-guaderrama-gallery",
+                storageBucket: "ivan-guaderrama-gallery.firebasestorage.app",
+                messagingSenderId: "416891532416",
+                appId: "1:416891532416:web:85878393a8317079c5a265"
+            };
+            
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            
+            log('✅ 3. Firebase inicializado');
+            log(`<pre>Project ID: ${firebaseConfig.projectId}</pre>`);
+            
+            // Intentar login
+            statusDiv.innerHTML += '<h2>🔐 Probando Login</h2>';
+            const email = 'obrgaleria@ivanguaderrama.com';
+            const password = 'QMgep809';
+            
+            log(`Intentando login con: ${email}`);
+            
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                log(`✅ 4. LOGIN EXITOSO!`);
+                log(`<pre>UID: ${user.uid}\nEmail: ${user.email}</pre>`);
+                
+                statusDiv.innerHTML += '<div class="success"><strong>🎉 CONCLUSIÓN:</strong> Firebase está funcionando correctamente. El problema está en la app React.</div>';
+                
+            } catch (error) {
+                log(`❌ Error en login: ${error.code} - ${error.message}`, true);
+            }
+            
+        } catch (error) {
+            log(`❌ Error crítico: ${error.message}`, true);
+            log(`<pre>${error.stack}</pre>`, true);
+        }
+    </script>
+</body>
+</html>

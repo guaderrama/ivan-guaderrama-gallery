@@ -1,0 +1,55 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Artworks collection
+    match /artworks/{artworkId} {
+      // Anyone can read active artworks (public gallery)
+      allow read: if resource.data.status == 'active' || isAdmin();
+      
+      // Only admins can create/update/delete
+      allow create, update, delete: if isAdmin();
+      
+      // Numbered editions subcollection
+      match /pieces/{pieceId} {
+        allow read: if resource.data.status == 'active' || isAdmin();
+        allow create, update, delete: if isAdmin();
+      }
+    }
+    
+    // Generated names collection (AI suggestions)
+    match /generatedNames/{nameId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false; // Immutable once created
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      // Users can read their own data
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      
+      // Only admins can read all users
+      allow read: if isAdmin();
+      
+      // Users can update their own profile (except role)
+      allow update: if isAuthenticated() && 
+                       request.auth.uid == userId &&
+                       request.resource.data.role == resource.data.role;
+      
+      // Only admins can create users or change roles
+      allow create, delete: if isAdmin();
+    }
+  }
+}

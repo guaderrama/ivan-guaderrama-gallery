@@ -1,0 +1,30 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null &&
+             firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Artwork images
+    match /artworks/{artworkId}/{allPaths=**} {
+      // Anyone can read (public gallery)
+      allow read: if true;
+      
+      // Only admins can upload/update/delete
+      allow write: if isAdmin();
+    }
+    
+    // Temporary uploads (for processing)
+    match /temp/{userId}/{allPaths=**} {
+      // Only authenticated users can upload to their own temp folder
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Admins can access all temp files
+      allow read, write: if isAdmin();
+    }
+  }
+}
