@@ -51,17 +51,17 @@ const App: React.FC = () => {
 
   const allExistingNames = useMemo(() => {
     return [
-      ...catalog.map(p => p.name.toLowerCase()),
-      ...numberedProducts.flatMap(np => np.editions.map(e => e.name.toLowerCase())),
-      ...miniWorks.map(mw => mw.name.toLowerCase())
+      ...catalog.map(p => p.name?.toLowerCase() || '').filter(n => n),
+      ...numberedProducts.flatMap(np => np.editions?.map(e => e.name?.toLowerCase() || '').filter(n => n) || []),
+      ...miniWorks.map(mw => mw.name?.toLowerCase() || '').filter(n => n)
     ];
   }, [catalog, numberedProducts, miniWorks]);
 
   const allExistingSkus = useMemo(() => {
     return [
-      ...catalog.map(p => p.sku.toUpperCase()),
-      ...numberedProducts.flatMap(np => np.editions.map(e => e.sku.toUpperCase())),
-      ...miniWorks.map(mw => mw.sku.toUpperCase())
+      ...catalog.map(p => p.sku?.toUpperCase() || '').filter(s => s),
+      ...numberedProducts.flatMap(np => np.editions?.map(e => e.sku?.toUpperCase() || '').filter(s => s) || []),
+      ...miniWorks.map(mw => mw.sku?.toUpperCase() || '').filter(s => s)
     ];
   }, [catalog, numberedProducts, miniWorks]);
 
