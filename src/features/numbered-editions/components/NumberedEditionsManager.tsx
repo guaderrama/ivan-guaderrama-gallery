@@ -5,12 +5,29 @@ import EditEditionModal from './EditEditionModal';
 
 interface NumberedEditionsManagerProps {
   products: NumberedProduct[];
-  onUpdateEdition: (edition: Edition, productSku: string) => void;
-  onSelectSeriesToEdit: (product: NumberedProduct) => void;
-  onUpdateProductImage: (sku: string, newImageUrl: string) => void;
+  onAddProduct: () => void;
+  onEditSeries: (product: NumberedProduct) => void;
+  onArchiveSeries: (productId: string) => void;
+  onDeleteSeries: (productId: string) => void;
+  onSaveEdition: (productId: string, edition: Edition) => void;
+  onArchiveEdition: (productId: string, editionId: string) => void;
+  onDeleteEdition: (productId: string, editionId: string) => void;
+  existingSkus: string[];
+  existingNames: string[];
 }
 
-const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({ products, onUpdateEdition, onSelectSeriesToEdit, onUpdateProductImage }) => {
+const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
+  products,
+  onAddProduct,
+  onEditSeries,
+  onArchiveSeries,
+  onDeleteSeries,
+  onSaveEdition,
+  onArchiveEdition,
+  onDeleteEdition,
+  existingSkus,
+  existingNames
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSku, setSelectedSku] = useState<string | undefined>(
     products.length > 0 ? products[0].sku : undefined
@@ -73,15 +90,8 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({ produ
         alert("La imagen es muy grande. El límite es 2MB.");
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        onUpdateProductImage(selectedProduct.sku, result);
-      };
-      reader.onerror = () => {
-        alert("No se pudo leer el archivo de imagen.");
-      };
-      reader.readAsDataURL(file);
+      // TODO: Implement image upload to Firebase Storage
+      alert("Función de cambio de imagen temporalmente deshabilitada.");
     }
   };
 
@@ -97,9 +107,9 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({ produ
     setEditingEdition(null);
   };
 
-  const handleSaveEdition = (updatedEdition: Edition) => {
+  const handleSaveEditedEdition = (updatedEdition: Edition) => {
     if (selectedProduct) {
-      onUpdateEdition(updatedEdition, selectedProduct.sku);
+      onSaveEdition(selectedProduct.id, updatedEdition);
     }
     setEditingEdition(null);
   };
@@ -164,7 +174,7 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({ produ
                 )}
             </select>
             <button
-              onClick={() => selectedProduct && onSelectSeriesToEdit(selectedProduct)}
+              onClick={() => selectedProduct && onEditSeries(selectedProduct)}
               disabled={!selectedProduct}
               className="p-2.5 rounded-lg text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Editar número de series"
@@ -260,9 +270,9 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({ produ
             <EditEditionModal
                 isOpen={!!editingEdition}
                 onClose={handleCancelEditEdition}
-                onSave={handleSaveEdition}
+                onSave={handleSaveEditedEdition}
                 edition={editingEdition}
-                productName={`${selectedProduct.name} (${selectedProduct.sku})`}
+                productName={`${selectedProduct.seriesName} (${selectedProduct.sku})`}
             />
         )}
     </div>

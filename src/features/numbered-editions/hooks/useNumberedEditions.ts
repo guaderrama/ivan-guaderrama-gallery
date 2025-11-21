@@ -12,19 +12,19 @@ interface UseNumberedEditionsReturn {
   /** Create a new series */
   createSeries: (seriesData: NewNumberedProductData) => Promise<string | null>;
   /** Update a series */
-  updateSeries: (seriesId: number, updates: Partial<NumberedProduct>) => Promise<boolean>;
+  updateSeries: (seriesId: string, updates: Partial<NumberedProduct>) => Promise<boolean>;
   /** Archive/unarchive a series */
-  archiveSeries: (seriesId: number) => Promise<boolean>;
+  archiveSeries: (seriesId: string) => Promise<boolean>;
   /** Delete a series (soft delete) */
-  deleteSeries: (seriesId: number) => Promise<boolean>;
+  deleteSeries: (seriesId: string) => Promise<boolean>;
   /** Create a new edition in a series */
-  createEdition: (seriesId: number, editionData: NewEditionData) => Promise<string | null>;
+  createEdition: (seriesId: string, editionData: NewEditionData) => Promise<string | null>;
   /** Update an edition */
-  updateEdition: (seriesId: number, editionId: number, updates: Partial<Edition>) => Promise<boolean>;
+  updateEdition: (seriesId: string, editionId: string, updates: Partial<Edition>) => Promise<boolean>;
   /** Archive/unarchive an edition */
-  archiveEdition: (seriesId: number, editionId: number) => Promise<boolean>;
+  archiveEdition: (seriesId: string, editionId: string) => Promise<boolean>;
   /** Delete an edition (soft delete) */
-  deleteEdition: (seriesId: number, editionId: number) => Promise<boolean>;
+  deleteEdition: (seriesId: string, editionId: string) => Promise<boolean>;
   /** Refresh series manually */
   refresh: () => Promise<void>;
 }
@@ -128,7 +128,7 @@ export function useNumberedEditions(): UseNumberedEditionsReturn {
 
   // Update series
   const updateSeries = useCallback(
-    async (seriesId: number, updates: Partial<NumberedProduct>): Promise<boolean> => {
+    async (seriesId: string, updates: Partial<NumberedProduct>): Promise<boolean> => {
       try {
         setError(null);
         await editionsService.updateSeries(seriesId, updates);
@@ -144,7 +144,7 @@ export function useNumberedEditions(): UseNumberedEditionsReturn {
   );
 
   // Archive series
-  const archiveSeries = useCallback(async (seriesId: number): Promise<boolean> => {
+  const archiveSeries = useCallback(async (seriesId: string): Promise<boolean> => {
     try {
       setError(null);
       await editionsService.archiveSeries(seriesId);
@@ -158,7 +158,7 @@ export function useNumberedEditions(): UseNumberedEditionsReturn {
   }, []);
 
   // Delete series
-  const deleteSeries = useCallback(async (seriesId: number): Promise<boolean> => {
+  const deleteSeries = useCallback(async (seriesId: string): Promise<boolean> => {
     try {
       setError(null);
       await editionsService.deleteSeries(seriesId);
@@ -175,7 +175,7 @@ export function useNumberedEditions(): UseNumberedEditionsReturn {
 
   // Create edition
   const createEdition = useCallback(
-    async (seriesId: number, editionData: NewEditionData): Promise<string | null> => {
+    async (seriesId: string, editionData: NewEditionData): Promise<string | null> => {
       try {
         setError(null);
         const id = await editionsService.createEdition(seriesId, editionData);
@@ -192,7 +192,7 @@ export function useNumberedEditions(): UseNumberedEditionsReturn {
 
   // Update edition
   const updateEdition = useCallback(
-    async (seriesId: number, editionId: number, updates: Partial<Edition>): Promise<boolean> => {
+    async (seriesId: string, editionId: string, updates: Partial<Edition>): Promise<boolean> => {
       try {
         setError(null);
         await editionsService.updateEdition(seriesId, editionId, updates);
@@ -209,7 +209,7 @@ export function useNumberedEditions(): UseNumberedEditionsReturn {
 
   // Archive edition
   const archiveEdition = useCallback(
-    async (seriesId: number, editionId: number): Promise<boolean> => {
+    async (seriesId: string, editionId: string): Promise<boolean> => {
       try {
         setError(null);
         await editionsService.archiveEdition(seriesId, editionId);
@@ -226,7 +226,7 @@ export function useNumberedEditions(): UseNumberedEditionsReturn {
 
   // Delete edition
   const deleteEdition = useCallback(
-    async (seriesId: number, editionId: number): Promise<boolean> => {
+    async (seriesId: string, editionId: string): Promise<boolean> => {
       try {
         setError(null);
         await editionsService.deleteEdition(seriesId, editionId);

@@ -7,7 +7,7 @@ interface MiniWorksManagerProps {
   works: MiniWork[];
   onOpenGenerateNameModal: () => void;
   onEdit: (work: MiniWork) => void;
-  onArchive: (workId: number) => void;
+  onArchive: (workId: string) => void;
   isArchivedView: boolean;
 }
 

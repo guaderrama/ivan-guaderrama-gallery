@@ -12,6 +12,11 @@ const ShippingCalculator: React.FC<ShippingCalculatorProps> = ({ shippingSetting
     const [shippingCosts, setShippingCosts] = useState<{ usa: number; can: number }>({ usa: 0, can: 0 });
     const [error, setError] = useState<string>('');
 
+    // Debug: Log received settings
+    useEffect(() => {
+        console.log('📦 ShippingCalculator received settings:', shippingSettings);
+    }, [shippingSettings]);
+
     useEffect(() => {
         const result = calculateNewShippingCosts({
             price: price,
