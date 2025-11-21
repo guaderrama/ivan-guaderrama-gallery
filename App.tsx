@@ -4,7 +4,6 @@ import type { Product, NewProduct, ProductCategory, ShippingSettings } from '@/f
 import type { NumberedProduct, Edition, NewNumberedProductData } from '@/features/numbered-editions/types';
 import type { MiniWork, NewMiniWork } from '@/features/mini-works/types';
 import { CATEGORIES } from '@/features/artwork-management/types';
-import { initialShippingSettings } from '@/shared/constants/data';
 import { ProductCard, ProductDetailModal, ProductFormModal } from '@/features/artwork-management/components';
 import { SettingsModal, BulkUploadModal, SearchIcon, SettingsIcon, PlusIcon, UploadIcon, ArchiveBoxIcon, XIcon } from '@/shared/components';
 import { NumberedEditionsManager, AddNumberedProductModal, EditSeriesModal } from '@/features/numbered-editions/components';
@@ -21,7 +20,42 @@ import { useMiniWorks } from '@/features/mini-works/hooks/useMiniWorks';
 const GenerateNameModal = lazy(() => import('@/features/ai-naming/components/GenerateNameModal'));
 const ArtworkSimulator = lazy(() => import('@/features/artwork-simulator/components/ArtworkSimulator'));
 
+// Default shipping settings (defined here to avoid import issues)
+const initialShippingSettings: ShippingSettings = {
+  costoGuiaUSA: 33,
+  costoPorKiloUSA: 8,
+  costoGuiaCanada: 55,
+  costoPorKiloCanada: 12,
+  tasaSeguro: 0.0125,
+  divisorIVA: 1.16,
+  divisorVolumetrico: 5000,
+};
+
 type ActiveTab = 'catalog' | 'seriadas' | 'miniWorks' | 'simulator';
+
+// TabButton component for consistent tab styling
+interface TabButtonProps {
+  tabName: ActiveTab;
+  label: string;
+  isActive: boolean;
+  onClick: () => void;
+}
+
+const TabButton: React.FC<TabButtonProps> = ({ label, isActive, onClick }) => (
+  <button
+    onClick={onClick}
+    className={`relative px-6 py-3 font-medium transition-all duration-300 focus:outline-none ${
+      isActive
+        ? 'text-gray-900'
+        : 'text-gray-500 hover:text-gray-800'
+    }`}
+  >
+    {label}
+    {isActive && (
+      <span className="absolute inset-x-0 bottom-0 h-1 bg-red-500 rounded-full transition-all duration-300"></span>
+    )}
+  </button>
+);
 
 const App: React.FC = () => {
   // ALL HOOKS MUST BE AT THE TOP (React Rules of Hooks)
@@ -37,6 +71,7 @@ const App: React.FC = () => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [shippingSettings, setShippingSettings] = useState<ShippingSettings>(initialShippingSettings);
+
   const [activeTab, setActiveTab] = useState<ActiveTab>('catalog');
   const [isAddNumberedProductModalOpen, setIsAddNumberedProductModalOpen] = useState(false);
   const [editingSeriesProduct, setEditingSeriesProduct] = useState<NumberedProduct | null>(null);
@@ -84,7 +119,7 @@ const App: React.FC = () => {
 
   const allExistingNames = useMemo(() => {
     return [
-      ...catalog.map(p => p.name?.toLowerCase() || '').filter(n => n),
+      ...catalog.map(p => p.nombre?.toLowerCase() || '').filter(n => n),
       ...numberedProducts.flatMap(np => np.editions?.map(e => e.name?.toLowerCase() || '').filter(n => n) || []),
       ...miniWorks.map(mw => mw.name?.toLowerCase() || '').filter(n => n)
     ];
@@ -110,7 +145,7 @@ const App: React.FC = () => {
 
     if (searchTerm) {
       filtered = filtered.filter(p =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.sku.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
@@ -181,7 +216,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSaveEdition = async (productId: number, edition: Edition) => {
+  const handleSaveEdition = async (productId: string, edition: Edition) => {
     try {
       // Check if it's a new edition (no existing id in Firestore) or an update
       const existingSeries = numberedProducts.find(np => np.id === productId);
@@ -205,7 +240,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleArchiveEdition = async (productId: number, editionId: number) => {
+  const handleArchiveEdition = async (productId: string, editionId: string) => {
     try {
       await archiveEdition(productId, editionId);
     } catch (error) {
@@ -214,7 +249,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleDeleteEdition = async (productId: number, editionId: number) => {
+  const handleDeleteEdition = async (productId: string, editionId: string) => {
     try {
       await deleteEdition(productId, editionId);
     } catch (error) {
@@ -223,7 +258,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleArchiveSeries = async (productId: number) => {
+  const handleArchiveSeries = async (productId: string) => {
     try {
       await archiveSeries(productId);
     } catch (error) {
@@ -232,7 +267,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleDeleteSeries = async (productId: number) => {
+  const handleDeleteSeries = async (productId: string) => {
     try {
       await deleteSeries(productId);
     } catch (error) {
@@ -241,7 +276,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleEditSeries = async (productId: number, updates: { seriesName: string; category: ProductCategory; description: string; basePrice: number }) => {
+  const handleEditSeries = async (productId: string, updates: { seriesName: string; category: ProductCategory; description: string; basePrice: number }) => {
     try {
       await updateSeries(productId, updates);
       setEditingSeriesProduct(null);
@@ -272,7 +307,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleDeleteMiniWork = async (id: number) => {
+  const handleDeleteMiniWork = async (id: string) => {
     try {
       await deleteMiniWork(id);
     } catch (error) {
@@ -281,7 +316,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleArchiveMiniWork = async (id: number) => {
+  const handleArchiveMiniWork = async (id: string) => {
     try {
       await archiveMiniWork(id);
     } catch (error) {
@@ -380,49 +415,33 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Tabs */}
-      <div className="flex space-x-2 mb-8 border-b border-gray-200">
-        <button
+      {/* Tabs - Using reusable TabButton component */}
+      <nav className="flex space-x-2 mb-8 border-b border-gray-200" aria-label="Tabs">
+        <TabButton
+          tabName="catalog"
+          label="Catálogo General"
+          isActive={activeTab === 'catalog'}
           onClick={() => setActiveTab('catalog')}
-          className={`px-6 py-3 font-medium transition-colors border-b-2 ${
-            activeTab === 'catalog'
-              ? 'text-gray-900 border-gray-900'
-              : 'text-gray-500 border-transparent hover:text-gray-700'
-          }`}
-        >
-          Catálogo General
-        </button>
-        <button
+        />
+        <TabButton
+          tabName="seriadas"
+          label="Ediciones Numeradas"
+          isActive={activeTab === 'seriadas'}
           onClick={() => setActiveTab('seriadas')}
-          className={`px-6 py-3 font-medium transition-colors border-b-2 ${
-            activeTab === 'seriadas'
-              ? 'text-gray-900 border-gray-900'
-              : 'text-gray-500 border-transparent hover:text-gray-700'
-          }`}
-        >
-          Ediciones Numeradas
-        </button>
-        <button
+        />
+        <TabButton
+          tabName="miniWorks"
+          label="Mini Obras"
+          isActive={activeTab === 'miniWorks'}
           onClick={() => setActiveTab('miniWorks')}
-          className={`px-6 py-3 font-medium transition-colors border-b-2 ${
-            activeTab === 'miniWorks'
-              ? 'text-gray-900 border-gray-900'
-              : 'text-gray-500 border-transparent hover:text-gray-700'
-          }`}
-        >
-          Mini Obras
-        </button>
-        <button
+        />
+        <TabButton
+          tabName="simulator"
+          label="Simulador"
+          isActive={activeTab === 'simulator'}
           onClick={() => setActiveTab('simulator')}
-          className={`px-6 py-3 font-medium transition-colors border-b-2 ${
-            activeTab === 'simulator'
-              ? 'text-gray-900 border-gray-900'
-              : 'text-gray-500 border-transparent hover:text-gray-700'
-          }`}
-        >
-          Simulador
-        </button>
-      </div>
+        />
+      </nav>
 
       {/* Catalog Tab */}
       {activeTab === 'catalog' && (
@@ -486,8 +505,8 @@ const App: React.FC = () => {
               <ProductCard
                 key={product.id}
                 product={product}
-                shippingSettings={shippingSettings}
-                onView={(p) => setViewingProduct(p)}
+                onEdit={(p) => setEditingProduct(p)}
+                onViewDetails={(p) => setViewingProduct(p)}
               />
             ))}
           </div>
@@ -550,6 +569,7 @@ const App: React.FC = () => {
         onClose={() => setIsFormModalOpen(false)}
         onSave={handleAddProduct}
         existingSkus={allExistingSkus}
+        shippingSettings={shippingSettings}
       />
 
       {editingProduct && (
@@ -559,6 +579,7 @@ const App: React.FC = () => {
           onSave={handleEditProduct}
           product={editingProduct}
           existingSkus={allExistingSkus}
+          shippingSettings={shippingSettings}
         />
       )}
 

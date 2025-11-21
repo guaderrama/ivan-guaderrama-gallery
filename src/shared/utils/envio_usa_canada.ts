@@ -16,12 +16,17 @@ export interface CalculationResult {
  * Calculates shipping costs for USA and Canada based on new logic.
  */
 export function calculateNewShippingCosts({ price, dimensionsStr, settings }: CalculationParams): CalculationResult {
+  // Validate settings first
+  if (!settings) {
+    return { usaCost: 0, canadaCost: 0, error: 'Configuración de envío no disponible.' };
+  }
+
   if (!dimensionsStr || price <= 0) {
     return { usaCost: 0, canadaCost: 0, error: null };
   }
 
   const dimensions = dimensionsStr.split(/[xX]/).map(d => parseFloat(d.trim()));
-  
+
   if (dimensions.length !== 3 || dimensions.some(d => isNaN(d) || d <= 0)) {
     return { usaCost: 0, canadaCost: 0, error: 'Formato de medidas de caja inválido (ej: 40x30x20).' };
   }

@@ -5,14 +5,14 @@ import { NewProduct, Product, ShippingSettings } from '../types';
 interface ProductFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddProduct: (product: NewProduct) => void;
-  editingProduct: Product | null;
-  onUpdateProduct: (product: Product) => void;
+  onSave: (product: NewProduct | Product) => void;
+  product?: Product;
+  existingSkus: string[];
   shippingSettings: ShippingSettings;
 }
 
 const ProductFormModal: React.FC<ProductFormModalProps> = (props) => {
-  const { isOpen, onClose } = props;
+  const { isOpen, onClose, onSave, product, shippingSettings } = props;
 
   if (!isOpen) return null;
 
@@ -49,8 +49,14 @@ const ProductFormModal: React.FC<ProductFormModalProps> = (props) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-          
-          <ProductForm {...props} onCancelEdit={handleRequestClose} />
+
+          <ProductForm
+            onAddProduct={onSave as (product: NewProduct) => void}
+            editingProduct={product || null}
+            onUpdateProduct={onSave as (product: Product) => void}
+            onCancelEdit={handleRequestClose}
+            shippingSettings={shippingSettings}
+          />
           
         </div>
       </div>
