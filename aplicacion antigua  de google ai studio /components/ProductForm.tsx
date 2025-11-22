@@ -1,10 +1,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import type { NewProduct, Product, ShippingSettings } from '../types';
-import { CATEGORIES } from '../types';
-import { SaveIcon } from '@/shared/components/Icons';
-import { calculateNewShippingCosts } from '@/shared/utils/envio_usa_canada';
-import { storageService } from '@/shared/services/storageService';
+import { NewProduct, Product, ShippingSettings } from '../types';
+import { SaveIcon } from './Icons';
+import { calculateNewShippingCosts } from '../utils/envio_usa_canada';
+import { CATEGORIES } from '../constants';
 
 interface ProductFormProps {
   onAddProduct: (product: NewProduct) => void;
@@ -40,7 +39,6 @@ const ProductForm: React.FC<ProductFormProps> = (
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isShippingCostManual, setIsShippingCostManual] = useState({ usa: false, can: false });
   const [shippingError, setShippingError] = useState<string>('');
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const isEditing = !!editingProduct;
 
   useEffect(() => {
@@ -103,89 +101,36 @@ const ProductForm: React.FC<ProductFormProps> = (
     }));
   };
 
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('🖼️ [IMAGE UPLOAD] Starting image upload process...');
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) {
-      console.log('⚠️ [IMAGE UPLOAD] No file selected');
-      return;
-    }
-
-    console.log('📁 [IMAGE UPLOAD] File details:', {
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      sizeInMB: (file.size / 1024 / 1024).toFixed(2) + 'MB'
-    });
-
-    try {
-      setIsUploadingImage(true);
-      setError(null);
-
-      // Validate file size (max 2MB)
-      if (file.size > 2 * 1024 * 1024) {
-        console.error('❌ [IMAGE UPLOAD] File too large:', (file.size / 1024 / 1024).toFixed(2) + 'MB');
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) { // Límite de 2MB
         setError("La imagen es muy grande. El límite es 2MB.");
-        setIsUploadingImage(false);
         return;
       }
-
-      console.log('✅ [IMAGE UPLOAD] File size OK');
-
-      // Create preview using FileReader
-      console.log('🔄 [IMAGE UPLOAD] Creating preview...');
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-        console.log('✅ [IMAGE UPLOAD] Preview created');
+        const result = reader.result as string;
+        setProductData(prev => ({ ...prev, imagenUrl: result }));
+        setImagePreview(result);
+        setError(null);
+      };
+      reader.onerror = () => {
+        setError("No se pudo leer el archivo de imagen.");
       };
       reader.readAsDataURL(file);
-
-      // Upload to Firebase Storage
-      const filename = storageService.generateUniqueFilename(file.name, 'artworks');
-      console.log('📤 [IMAGE UPLOAD] Uploading to Firebase Storage:', filename);
-
-      const downloadURL = await storageService.uploadImage(file, filename);
-      console.log('✅ [IMAGE UPLOAD] Upload successful! URL:', downloadURL);
-
-      // Save the download URL (not base64)
-      setProductData(prev => ({ ...prev, imagenUrl: downloadURL }));
-      console.log('✅ [IMAGE UPLOAD] URL saved to product data');
-
-      setIsUploadingImage(false);
-      console.log('✅ [IMAGE UPLOAD] Process complete!');
-    } catch (err) {
-      console.error('❌ [IMAGE UPLOAD] Upload failed:', err);
-      setError(err instanceof Error ? err.message : "No se pudo cargar la imagen.");
-      setIsUploadingImage(false);
-      setImagePreview(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('💾 [SAVE] Form submitted');
-    console.log('📦 [SAVE] Product data:', productData);
-    console.log('🖼️ [SAVE] Image URL type:', typeof productData.imagenUrl);
-    console.log('🖼️ [SAVE] Image URL length:', productData.imagenUrl?.length || 0);
-    console.log('🖼️ [SAVE] Image URL preview:', productData.imagenUrl?.substring(0, 100) + '...');
-
     if (!productData.nombre || !productData.sku) {
-      console.error('❌ [SAVE] Missing required fields');
       setError("Nombre y SKU son campos obligatorios.");
       return;
     }
-
-    console.log('✅ [SAVE] Validation passed');
-
     if (isEditing) {
-      console.log('🔄 [SAVE] Updating existing product...');
       onUpdateProduct(productData as Product);
     } else {
-      console.log('➕ [SAVE] Adding new product...');
       onAddProduct(productData as NewProduct);
       setProductData(initialFormState);
       setImagePreview(null);
@@ -194,7 +139,6 @@ const ProductForm: React.FC<ProductFormProps> = (
       }
     }
     setError(null);
-    console.log('✅ [SAVE] Save process initiated');
   };
 
   return (
@@ -273,10 +217,9 @@ const ProductForm: React.FC<ProductFormProps> = (
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              disabled={isUploadingImage}
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
             >
-              {isUploadingImage ? 'Subiendo...' : (imagePreview ? 'Cambiar Imagen' : 'Subir Imagen')}
+              {imagePreview ? 'Cambiar Imagen' : 'Subir Imagen'}
             </button>
             <input
               id="image-upload"
@@ -286,19 +229,14 @@ const ProductForm: React.FC<ProductFormProps> = (
               ref={fileInputRef}
               onChange={handleImageChange}
               className="hidden"
-              disabled={isUploadingImage}
             />
           </div>
         </div>
 
         <div className="flex items-center gap-4 pt-4">
-            <button
-              type="submit"
-              disabled={isUploadingImage}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-transparent text-sm font-bold rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <button type="submit" className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-transparent text-sm font-bold rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
             <SaveIcon className="h-5 w-5" />
-            {isUploadingImage ? 'Subiendo imagen...' : (isEditing ? 'Actualizar Producto' : 'Guardar Producto')}
+            {isEditing ? 'Actualizar Producto' : 'Guardar Producto'}
             </button>
             
             <button 

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Actualizar Reglas de Firestore</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: #1a202c;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        .content {
+            padding: 40px;
+        }
+        .step {
+            background: #f7fafc;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .step h2 {
+            color: #667eea;
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+        }
+        .step p {
+            color: #4a5568;
+            margin-bottom: 10px;
+        }
+        .link {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+        .link:hover {
+            background: #5a67d8;
+        }
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 15px 0;
+            position: relative;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .copy-btn:hover {
+            background: #5a67d8;
+        }
+        .copy-btn.copied {
+            background: #48bb78;
+        }
+        .alert {
+            background: #fed7d7;
+            border-left: 4px solid #f56565;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .alert h3 {
+            color: #c53030;
+            margin-bottom: 8px;
+        }
+        .alert p {
+            color: #742a2a;
+        }
+        .success {
+            background: #c6f6d5;
+            border-left: 4px solid #48bb78;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        .success h3 {
+            color: #276749;
+            margin-bottom: 8px;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔥 Actualizar Reglas de Firestore</h1>
+            <p>Ivan Guaderrama Art Gallery</p>
+        </div>
+
+        <div class="content">
+            <div class="alert">
+                <h3>⚠️ Acción Requerida</h3>
+                <p>Las nuevas colecciones <code>numbered-editions</code> y <code>mini-works</code> necesitan permisos en Firestore.</p>
+                <p><strong>Sin estos permisos, la aplicación mostrará pantalla blanca.</strong></p>
+            </div>
+
+            <div class="step">
+                <h2>Paso 1: Abrir Firebase Console</h2>
+                <p>Click en el botón para abrir Firebase Console:</p>
+                <a href="https://console.firebase.google.com/project/ivan-guaderrama-gallery/firestore/rules" target="_blank" class="link">
+                    🚀 Abrir Firebase Console
+                </a>
+            </div>
+
+            <div class="step">
+                <h2>Paso 2: Navegar a Firestore Rules</h2>
+                <p>En Firebase Console:</p>
+                <ol style="margin-left: 20px; color: #4a5568;">
+                    <li>Verifica que estés en el proyecto: <strong>ivan-guaderrama-gallery</strong></li>
+                    <li>En el menú lateral, click en <strong>Firestore Database</strong></li>
+                    <li>Click en la pestaña <strong>Rules</strong> (Reglas)</li>
+                </ol>
+            </div>
+
+            <div class="step">
+                <h2>Paso 3: Copiar Nuevas Reglas</h2>
+                <p>Click en el botón "Copiar Reglas" para copiar al portapapeles:</p>
+
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyRules()">📋 Copiar Reglas</button>
+                    <pre id="rulesCode">rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Artworks collection (Catálogo General)
+    match /artworks/{artworkId} {
+      allow read: if resource.data.status == 'active' || isAdmin();
+      allow create, update, delete: if isAdmin();
+
+      match /pieces/{pieceId} {
+        allow read: if resource.data.status == 'active' || isAdmin();
+        allow create, update, delete: if isAdmin();
+      }
+    }
+
+    // Numbered Editions collection (new structure with subcollections)
+    match /numbered-editions/{seriesId} {
+      allow read: if resource.data.seriesStatus == 'active' || isAdmin();
+      allow create, update, delete: if isAdmin();
+
+      match /editions/{editionId} {
+        allow read: if resource.data.status == 'active' || isAdmin();
+        allow create, update, delete: if isAdmin();
+      }
+    }
+
+    // Mini Works collection
+    match /mini-works/{workId} {
+      allow read: if resource.data.status == 'active' || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Generated names collection (AI suggestions)
+    match /generatedNames/{nameId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow read: if isAdmin();
+      allow update: if isAuthenticated() &&
+                       request.auth.uid == userId &&
+                       request.resource.data.role == resource.data.role;
+      allow create, delete: if isAdmin();
+    }
+  }
+}</pre>
+                </div>
+            </div>
+
+            <div class="step">
+                <h2>Paso 4: Pegar y Publicar</h2>
+                <p>En Firebase Console:</p>
+                <ol style="margin-left: 20px; color: #4a5568;">
+                    <li>Selecciona <strong>TODO</strong> el contenido actual en el editor de reglas</li>
+                    <li>Pega el contenido que copiaste (Ctrl+V o Cmd+V)</li>
+                    <li>Click en el botón <strong>"Publish"</strong> (Publicar) arriba a la derecha</li>
+                    <li>Confirma la publicación</li>
+                </ol>
+            </div>
+
+            <div class="step">
+                <h2>Paso 5: Verificar Cambios</h2>
+                <p>Una vez publicadas las reglas:</p>
+                <ol style="margin-left: 20px; color: #4a5568;">
+                    <li>Vuelve a tu aplicación: <a href="http://localhost:3001" target="_blank" style="color: #667eea;">http://localhost:3001</a></li>
+                    <li>Refresca la página (F5 o Ctrl+R)</li>
+                    <li>La aplicación debería cargar correctamente</li>
+                    <li>Los errores de "permissions" deberían desaparecer de la consola</li>
+                </ol>
+            </div>
+
+            <div class="success">
+                <h3>✅ Listo para Probar</h3>
+                <p>Después de publicar las reglas, podrás:</p>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>✓ Ver el Catálogo General</li>
+                    <li>✓ Crear y editar Ediciones Numeradas</li>
+                    <li>✓ Gestionar Mini Obras</li>
+                    <li>✓ Todas las operaciones CRUD funcionarán correctamente</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyRules() {
+            const rulesText = document.getElementById('rulesCode').textContent;
+            navigator.clipboard.writeText(rulesText).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                btn.textContent = '✅ Copiado!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = '📋 Copiar Reglas';
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                alert('Error al copiar. Por favor copia manualmente.');
+            });
+        }
+    </script>
+</body>
+</html>
