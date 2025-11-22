@@ -28,6 +28,9 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
   existingSkus,
   existingNames
 }) => {
+  console.log('📚 [COMPONENT] NumberedEditionsManager rendered with', products.length, 'products');
+  console.log('📚 [COMPONENT] Products:', products);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSku, setSelectedSku] = useState<string | undefined>(
     products.length > 0 ? products[0].sku : undefined

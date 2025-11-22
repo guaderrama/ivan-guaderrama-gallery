@@ -147,6 +147,7 @@ export const editionsService = {
    * Subscribe to series changes (real-time)
    */
   subscribeToAllSeries(callback: (series: NumberedProduct[]) => void): () => void {
+    console.log('📚 [SERIES] Setting up subscription to series...');
     const seriesRef = collection(db, SERIES_COLLECTION);
     const q = query(
       seriesRef,
@@ -158,13 +159,16 @@ export const editionsService = {
     const unsubscribe = onSnapshot(
       q,
       async (snapshot) => {
+        console.log(`📚 [SERIES] Received ${snapshot.docs.length} series documents`);
         const seriesList: NumberedProduct[] = [];
 
         for (const seriesDoc of snapshot.docs) {
           const seriesData = seriesDoc.data();
+          console.log(`📚 [SERIES] Processing series: ${seriesDoc.id}`, seriesData);
 
           // Get editions for this series
           const editions = await editionsService.getEditionsBySeries(seriesDoc.id);
+          console.log(`📚 [SERIES] Found ${editions.length} editions for series ${seriesDoc.id}`);
 
           seriesList.push({
             id: seriesDoc.id,
@@ -176,10 +180,19 @@ export const editionsService = {
           } as NumberedProduct);
         }
 
+        console.log(`✅ [SERIES] Callback with ${seriesList.length} series total`);
         callback(seriesList);
       },
       (error) => {
-        console.error('Error in series subscription:', error);
+        console.error('❌ [SERIES] Error in series subscription:', error);
+        console.error('❌ [SERIES] Error code:', error.code);
+        console.error('❌ [SERIES] Error message:', error.message);
+
+        // If it's an index error, provide helpful message
+        if (error.code === 'failed-precondition' || error.message.includes('index')) {
+          console.error('❌ [SERIES] INDEX REQUIRED: Create the composite index in Firebase Console');
+          console.error('❌ [SERIES] Go to: https://console.firebase.google.com/project/ivan-guaderrama-gallery/firestore/indexes');
+        }
       }
     );
 

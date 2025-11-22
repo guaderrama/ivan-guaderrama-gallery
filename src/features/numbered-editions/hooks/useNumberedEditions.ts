@@ -62,6 +62,7 @@ interface UseNumberedEditionsReturn {
  * ```
  */
 export function useNumberedEditions(): UseNumberedEditionsReturn {
+  console.log('📚 [HOOK] useNumberedEditions initialized');
   const [series, setSeries] = useState<NumberedProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
