@@ -8,6 +8,7 @@ interface NumberedEditionsManagerProps {
   products: NumberedProduct[];
   onAddProduct: () => void;
   onEditSeries: (product: NumberedProduct) => void;
+  onUpdateSeriesImage: (productId: string, imageUrl: string) => Promise<void>;
   onArchiveSeries: (productId: string) => void;
   onDeleteSeries: (productId: string) => void;
   onSaveEdition: (productId: string, edition: Edition) => void;
@@ -21,6 +22,7 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
   products,
   onAddProduct,
   onEditSeries,
+  onUpdateSeriesImage,
   onArchiveSeries,
   onDeleteSeries,
   onSaveEdition,
@@ -123,15 +125,10 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
       const downloadURL = await storageService.uploadImage(file, filename);
       console.log('✅ [SERIES IMAGE] Upload successful! URL:', downloadURL);
 
-      // Update series with new image URL
-      const updatedProduct: NumberedProduct = {
-        ...selectedProduct,
-        imageUrl: downloadURL
-      };
-
-      console.log('🔄 [SERIES IMAGE] Updating series with new image URL...');
-      onEditSeries(updatedProduct);
-      console.log('✅ [SERIES IMAGE] Series updated successfully!');
+      // Update series with new image URL in Firestore
+      console.log('🔄 [SERIES IMAGE] Updating series in Firestore...');
+      await onUpdateSeriesImage(selectedProduct.id, downloadURL);
+      console.log('✅ [SERIES IMAGE] Series updated successfully in Firestore!');
 
       setIsUploadingImage(false);
     } catch (err) {

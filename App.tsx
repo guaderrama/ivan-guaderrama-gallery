@@ -283,7 +283,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleEditSeries = async (productId: string, updates: { seriesName: string; category: ProductCategory; description: string; basePrice: number }) => {
+  const handleEditSeries = async (productId: string, updates: Partial<NumberedProduct>) => {
     try {
       await updateSeries(productId, updates);
       setEditingSeriesProduct(null);
@@ -526,6 +526,9 @@ const App: React.FC = () => {
           products={numberedProducts}
           onAddProduct={() => setIsAddNumberedProductModalOpen(true)}
           onEditSeries={(product) => setEditingSeriesProduct(product)}
+          onUpdateSeriesImage={async (productId: string, imageUrl: string) => {
+            await updateSeries(productId, { imageUrl });
+          }}
           onArchiveSeries={handleArchiveSeries}
           onDeleteSeries={handleDeleteSeries}
           onSaveEdition={handleSaveEdition}
