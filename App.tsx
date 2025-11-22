@@ -135,9 +135,16 @@ const App: React.FC = () => {
 
   // Computed values
   const filteredCatalog = useMemo(() => {
-    let filtered = catalog.filter(product =>
-      (!showArchived ? product.status !== 'archived' : true)
-    );
+    let filtered = catalog.filter(product => {
+      // Si NO estamos mostrando archivados, ocultar:
+      // 1. Obras con status 'archived'
+      // 2. Obras vendidas (vendido: true)
+      if (!showArchived) {
+        return product.status !== 'archived' && !product.vendido;
+      }
+      // Si estamos mostrando archivados, mostrar todo
+      return true;
+    });
 
     if (selectedCategory !== 'ALL') {
       filtered = filtered.filter(p => p.category === selectedCategory);
