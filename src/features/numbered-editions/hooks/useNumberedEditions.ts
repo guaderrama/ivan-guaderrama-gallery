@@ -86,25 +86,40 @@ export function useNumberedEditions(): UseNumberedEditionsReturn {
 
   // Setup real-time subscription
   useEffect(() => {
+    console.log('📚 [HOOK] Setting up subscription in useEffect...');
     setLoading(true);
     setError(null);
 
     let unsubscribe: (() => void) | undefined;
+    let timeoutId: NodeJS.Timeout | undefined;
+
+    // Safety timeout - if loading takes > 10 seconds, something is wrong
+    timeoutId = setTimeout(() => {
+      console.error('❌ [HOOK] Subscription timeout after 10 seconds');
+      setLoading(false);
+      setError('Timeout loading series data. Please refresh the page.');
+    }, 10000);
 
     try {
       unsubscribe = editionsService.subscribeToAllSeries((data) => {
+        console.log('📚 [HOOK] Subscription callback received data:', data.length, 'series');
+        if (timeoutId) clearTimeout(timeoutId);
         setSeries(data);
         setLoading(false);
       });
+      console.log('📚 [HOOK] Subscription set up successfully');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to subscribe to series';
+      console.error('❌ [HOOK] Error in useEffect:', err);
+      if (timeoutId) clearTimeout(timeoutId);
       setError(message);
       setLoading(false);
-      console.error('Error subscribing to series:', err);
     }
 
     // Cleanup subscription on unmount
     return () => {
+      console.log('📚 [HOOK] Cleaning up subscription...');
+      if (timeoutId) clearTimeout(timeoutId);
       if (unsubscribe) {
         unsubscribe();
       }

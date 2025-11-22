@@ -109,19 +109,23 @@ export const editionsService = {
    */
   async getAllSeries(): Promise<NumberedProduct[]> {
     try {
+      console.log('📚 [SERIES] Getting all series...');
       const seriesRef = collection(db, SERIES_COLLECTION);
-      const q = query(
-        seriesRef,
-        where('seriesStatus', '!=', 'deleted'),
-        orderBy('seriesStatus'),
-        orderBy('createdAt', 'desc')
-      );
+      // Simplified query - no composite index required
+      const q = query(seriesRef, orderBy('createdAt', 'desc'));
 
       const snapshot = await getDocs(q);
+      console.log(`📚 [SERIES] Found ${snapshot.docs.length} series documents (before filtering)`);
       const seriesList: NumberedProduct[] = [];
 
       for (const seriesDoc of snapshot.docs) {
         const seriesData = seriesDoc.data();
+
+        // Filter out deleted series in memory
+        if (seriesData.seriesStatus === 'deleted') {
+          console.log(`📚 [SERIES] Skipping deleted series: ${seriesDoc.id}`);
+          continue;
+        }
 
         // Get editions for this series
         const editions = await editionsService.getEditionsBySeries(seriesDoc.id);
@@ -136,9 +140,10 @@ export const editionsService = {
         } as NumberedProduct);
       }
 
+      console.log(`📚 [SERIES] Returning ${seriesList.length} active series`);
       return seriesList;
     } catch (error) {
-      console.error('Error getting all series:', error);
+      console.error('❌ [SERIES] Error getting all series:', error);
       throw new Error('Failed to fetch series');
     }
   },
@@ -284,24 +289,29 @@ export const editionsService = {
    */
   async getEditionsBySeries(seriesId: string | number): Promise<Edition[]> {
     try {
+      console.log(`📄 [EDITIONS] Getting editions for series: ${seriesId}`);
       const editionsRef = collection(db, SERIES_COLLECTION, seriesId.toString(), EDITIONS_SUBCOLLECTION);
-      const q = query(
-        editionsRef,
-        where('status', '!=', 'deleted'),
-        orderBy('status'),
-        orderBy('editionNumber', 'asc')
-      );
+      // Simplified query - no composite index required
+      const q = query(editionsRef, orderBy('editionNumber', 'asc'));
 
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt instanceof Timestamp
-          ? doc.data().createdAt.toDate().toISOString()
-          : new Date().toISOString(),
-      })) as Edition[];
+      console.log(`📄 [EDITIONS] Found ${snapshot.docs.length} editions (before filtering)`);
+
+      // Filter out deleted editions in memory
+      const editions = snapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt instanceof Timestamp
+            ? doc.data().createdAt.toDate().toISOString()
+            : new Date().toISOString(),
+        }))
+        .filter(edition => edition.status !== 'deleted') as Edition[];
+
+      console.log(`📄 [EDITIONS] Returning ${editions.length} active editions`);
+      return editions;
     } catch (error) {
-      console.error('Error getting editions:', error);
+      console.error('❌ [EDITIONS] Error getting editions:', error);
       throw new Error('Failed to fetch editions');
     }
   },
