@@ -52,3 +52,4 @@ screenshot*.png
 dev.log
 # IDE and MCP configuration
 .idx/
+*.tar.gz
