@@ -149,12 +149,8 @@ export const editionsService = {
   subscribeToAllSeries(callback: (series: NumberedProduct[]) => void): () => void {
     console.log('📚 [SERIES] Setting up subscription to series...');
     const seriesRef = collection(db, SERIES_COLLECTION);
-    const q = query(
-      seriesRef,
-      where('seriesStatus', '!=', 'deleted'),
-      orderBy('seriesStatus'),
-      orderBy('createdAt', 'desc')
-    );
+    // Simplified query - no composite index required
+    const q = query(seriesRef, orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(
       q,
@@ -164,6 +160,13 @@ export const editionsService = {
 
         for (const seriesDoc of snapshot.docs) {
           const seriesData = seriesDoc.data();
+
+          // Filter out deleted series in memory (no index needed)
+          if (seriesData.seriesStatus === 'deleted') {
+            console.log(`📚 [SERIES] Skipping deleted series: ${seriesDoc.id}`);
+            continue;
+          }
+
           console.log(`📚 [SERIES] Processing series: ${seriesDoc.id}`, seriesData);
 
           // Get editions for this series
