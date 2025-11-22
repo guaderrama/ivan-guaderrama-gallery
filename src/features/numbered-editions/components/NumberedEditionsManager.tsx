@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import type { NumberedProduct, Edition } from '../types';
 import { EditIcon, SearchIcon } from '@/shared/components/Icons';
 import EditEditionModal from './EditEditionModal';
+import { storageService } from '@/shared/services/storageService';
 
 interface NumberedEditionsManagerProps {
   products: NumberedProduct[];
@@ -38,6 +39,7 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [editingEdition, setEditingEdition] = useState<Edition | null>(null);
   const [filterStatus, setFilterStatus] = useState<'all' | 'sold' | 'available'>('all');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   useEffect(() => {
     if (!selectedSku && products.length > 0) {
@@ -86,15 +88,61 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
   }, [selectedProduct, filterStatus]);
 
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('🖼️ [SERIES IMAGE] Starting image upload process...');
     const file = e.target.files?.[0];
-    if (file && selectedProduct) {
-      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+    if (!file || !selectedProduct) {
+      console.log('⚠️ [SERIES IMAGE] No file or no selected product');
+      return;
+    }
+
+    console.log('📁 [SERIES IMAGE] File details:', {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      sizeInMB: (file.size / 1024 / 1024).toFixed(2) + 'MB'
+    });
+
+    try {
+      setIsUploadingImage(true);
+
+      // Validate file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        console.error('❌ [SERIES IMAGE] File too large:', (file.size / 1024 / 1024).toFixed(2) + 'MB');
         alert("La imagen es muy grande. El límite es 2MB.");
+        setIsUploadingImage(false);
         return;
       }
-      // TODO: Implement image upload to Firebase Storage
-      alert("Función de cambio de imagen temporalmente deshabilitada.");
+
+      console.log('✅ [SERIES IMAGE] File size OK');
+
+      // Upload to Firebase Storage
+      const filename = storageService.generateUniqueFilename(file.name, 'numbered-editions');
+      console.log('📤 [SERIES IMAGE] Uploading to Firebase Storage:', filename);
+
+      const downloadURL = await storageService.uploadImage(file, filename);
+      console.log('✅ [SERIES IMAGE] Upload successful! URL:', downloadURL);
+
+      // Update series with new image URL
+      const updatedProduct: NumberedProduct = {
+        ...selectedProduct,
+        imageUrl: downloadURL
+      };
+
+      console.log('🔄 [SERIES IMAGE] Updating series with new image URL...');
+      onEditSeries(updatedProduct);
+      console.log('✅ [SERIES IMAGE] Series updated successfully!');
+
+      setIsUploadingImage(false);
+    } catch (err) {
+      console.error('❌ [SERIES IMAGE] Upload failed:', err);
+      alert(err instanceof Error ? err.message : "No se pudo cargar la imagen.");
+      setIsUploadingImage(false);
+
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -207,11 +255,24 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
                         )}
                          <button
                             onClick={triggerImageUpload}
-                            className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 flex items-center justify-center text-white text-sm font-bold opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-lg cursor-pointer"
+                            disabled={isUploadingImage}
+                            className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 flex items-center justify-center text-white text-sm font-bold opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-lg cursor-pointer disabled:cursor-wait disabled:opacity-100 disabled:bg-opacity-60"
                             aria-label="Cambiar foto de la obra"
                         >
-                            <EditIcon className="h-5 w-5 mr-2" />
-                            <span>Cambiar Foto</span>
+                            {isUploadingImage ? (
+                                <>
+                                    <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span>Subiendo...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <EditIcon className="h-5 w-5 mr-2" />
+                                    <span>Cambiar Foto</span>
+                                </>
+                            )}
                         </button>
                         <input
                             type="file"
