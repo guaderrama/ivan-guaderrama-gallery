@@ -38,6 +38,7 @@ const EditEditionModal: React.FC<EditEditionModalProps> = ({ isOpen, onClose, on
   const [formData, setFormData] = useState<Edition>(edition);
 
   useEffect(() => {
+    console.log('🔄 [MODAL] useEffect triggered - resetting formData with edition:', edition);
     setFormData(edition);
   }, [edition, isOpen]);
 
@@ -45,12 +46,20 @@ const EditEditionModal: React.FC<EditEditionModalProps> = ({ isOpen, onClose, on
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    console.log('✏️ [MODAL] Input changed:', { field: name, value });
+    setFormData(prev => {
+      const updated = { ...prev, [name]: value };
+      console.log('✏️ [MODAL] Updated formData:', updated);
+      return updated;
+    });
   };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('📋 [MODAL] handleSave called with formData:', formData);
+    console.log('📋 [MODAL] Original edition:', edition);
     onSave(formData);
+    onClose();
   };
 
   const handleModalContentClick = (e: React.MouseEvent) => {
