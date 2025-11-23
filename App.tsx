@@ -225,24 +225,31 @@ const App: React.FC = () => {
 
   const handleSaveEdition = async (productId: string, edition: Edition) => {
     try {
+      console.log('💾 [APP] handleSaveEdition called with:', { productId, edition });
+
       // Check if it's a new edition (no existing id in Firestore) or an update
       const existingSeries = numberedProducts.find(np => np.id === productId);
       if (!existingSeries) {
         throw new Error('Series not found');
       }
+      console.log('💾 [APP] Found series:', existingSeries.seriesName);
 
       const existingEdition = existingSeries.editions.find(e => e.id === edition.id);
 
       if (existingEdition) {
         // Update existing edition
+        console.log('💾 [APP] Updating existing edition:', edition.id);
         await updateEdition(productId, edition.id, edition);
+        console.log('✅ [APP] Edition updated successfully!');
       } else {
         // Create new edition
+        console.log('💾 [APP] Creating new edition');
         const { id, status, createdAt, ...editionData } = edition;
         await createEdition(productId, editionData);
+        console.log('✅ [APP] Edition created successfully!');
       }
     } catch (error) {
-      console.error('Error saving edition:', error);
+      console.error('❌ [APP] Error saving edition:', error);
       alert('Error al guardar la edición. Por favor intenta de nuevo.');
     }
   };

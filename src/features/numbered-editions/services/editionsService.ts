@@ -232,13 +232,18 @@ export const editionsService = {
    */
   async updateEdition(seriesId: string | number, editionId: string | number, updates: Partial<Edition>): Promise<void> {
     try {
+      console.log('🔧 [SERVICE] updateEdition called with:', { seriesId, editionId, updates });
       const editionRef = doc(db, SERIES_COLLECTION, seriesId.toString(), EDITIONS_SUBCOLLECTION, editionId.toString());
+      console.log('🔧 [SERVICE] Edition path:', editionRef.path);
+
       await updateDoc(editionRef, {
         ...updates,
         updatedAt: serverTimestamp(),
       });
+
+      console.log('✅ [SERVICE] Edition updated in Firestore successfully');
     } catch (error) {
-      console.error('Error updating edition:', error);
+      console.error('❌ [SERVICE] Error updating edition:', error);
       throw new Error('Failed to update edition');
     }
   },

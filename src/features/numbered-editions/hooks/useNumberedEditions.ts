@@ -210,13 +210,15 @@ export function useNumberedEditions(): UseNumberedEditionsReturn {
   const updateEdition = useCallback(
     async (seriesId: string, editionId: string, updates: Partial<Edition>): Promise<boolean> => {
       try {
+        console.log('📝 [HOOK] updateEdition called:', { seriesId, editionId, updates });
         setError(null);
         await editionsService.updateEdition(seriesId, editionId, updates);
+        console.log('✅ [HOOK] Edition updated successfully');
         return true;
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to update edition';
         setError(message);
-        console.error('Error updating edition:', err);
+        console.error('❌ [HOOK] Error updating edition:', err);
         return false;
       }
     },
