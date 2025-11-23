@@ -38,9 +38,11 @@ const EditEditionModal: React.FC<EditEditionModalProps> = ({ isOpen, onClose, on
   const [formData, setFormData] = useState<Edition>(edition);
 
   useEffect(() => {
+    // Only reset formData when the edition ID changes (different edition selected)
+    // NOT when the edition object is recreated with same data
     console.log('🔄 [MODAL] useEffect triggered - resetting formData with edition:', edition);
     setFormData(edition);
-  }, [edition, isOpen]);
+  }, [edition.id]); // Only depend on edition.id, not the whole object
 
   if (!isOpen) return null;
 
