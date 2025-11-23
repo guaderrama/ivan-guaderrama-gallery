@@ -3,24 +3,19 @@ import React, { useState, useEffect } from 'react';
 import { NumberedProduct } from '../types';
 
 interface EditSeriesModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (sku: string, newTotal: number) => void;
   product: NumberedProduct;
+  onClose: () => void;
+  onSave: (updates: Partial<NumberedProduct>) => void;
 }
 
-const EditSeriesModal: React.FC<EditSeriesModalProps> = ({ isOpen, onClose, onSave, product }) => {
+const EditSeriesModal: React.FC<EditSeriesModalProps> = ({ onClose, onSave, product }) => {
   const [newTotalEditions, setNewTotalEditions] = useState(product.totalEditions);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (isOpen) {
-      setNewTotalEditions(product.totalEditions);
-      setError('');
-    }
-  }, [isOpen, product]);
-
-  if (!isOpen) return null;
+    setNewTotalEditions(product.totalEditions);
+    setError('');
+  }, [product]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +31,7 @@ const EditSeriesModal: React.FC<EditSeriesModalProps> = ({ isOpen, onClose, onSa
       return;
     }
 
-    onSave(product.sku, newTotalEditions);
+    onSave({ totalEditions: newTotalEditions });
   };
 
   const handleModalContentClick = (e: React.MouseEvent) => {
