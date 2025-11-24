@@ -195,6 +195,8 @@ export function useNumberedEditions(): UseNumberedEditionsReturn {
       try {
         setError(null);
         const id = await editionsService.createEdition(seriesId, editionData);
+        // Refresh to get updated data
+        await fetchSeries();
         return id;
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to create edition';
@@ -203,7 +205,7 @@ export function useNumberedEditions(): UseNumberedEditionsReturn {
         return null;
       }
     },
-    []
+    [fetchSeries]
   );
 
   // Update edition
@@ -214,6 +216,12 @@ export function useNumberedEditions(): UseNumberedEditionsReturn {
         setError(null);
         await editionsService.updateEdition(seriesId, editionId, updates);
         console.log('✅ [HOOK] Edition updated successfully');
+
+        // Refresh all series data to get updated edition
+        console.log('🔄 [HOOK] Refreshing series data after edition update...');
+        await fetchSeries();
+        console.log('✅ [HOOK] Series data refreshed');
+
         return true;
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to update edition';
@@ -222,7 +230,7 @@ export function useNumberedEditions(): UseNumberedEditionsReturn {
         return false;
       }
     },
-    []
+    [fetchSeries]
   );
 
   // Archive edition
@@ -231,6 +239,8 @@ export function useNumberedEditions(): UseNumberedEditionsReturn {
       try {
         setError(null);
         await editionsService.archiveEdition(seriesId, editionId);
+        // Refresh to get updated data
+        await fetchSeries();
         return true;
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to archive edition';
@@ -239,7 +249,7 @@ export function useNumberedEditions(): UseNumberedEditionsReturn {
         return false;
       }
     },
-    []
+    [fetchSeries]
   );
 
   // Delete edition
@@ -248,6 +258,8 @@ export function useNumberedEditions(): UseNumberedEditionsReturn {
       try {
         setError(null);
         await editionsService.deleteEdition(seriesId, editionId);
+        // Refresh to get updated data
+        await fetchSeries();
         return true;
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to delete edition';
@@ -256,7 +268,7 @@ export function useNumberedEditions(): UseNumberedEditionsReturn {
         return false;
       }
     },
-    []
+    [fetchSeries]
   );
 
   return {
