@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import type { NumberedProduct, Edition } from '../types';
-import { EditIcon, SearchIcon } from '@/shared/components/Icons';
+import { EditIcon, SearchIcon, PlusIcon, TrashIcon } from '@/shared/components/Icons';
 import EditEditionModal from './EditEditionModal';
 import { storageService } from '@/shared/services/storageService';
 
@@ -230,6 +230,19 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
             >
               <EditIcon className="h-5 w-5" />
             </button>
+            <button
+              onClick={() => {
+                if (selectedProduct && window.confirm(`¿Estás seguro de que deseas eliminar "${selectedProduct.name}"? Esta acción no se puede deshacer.`)) {
+                  onDeleteSeries(selectedProduct.id);
+                }
+              }}
+              disabled={!selectedProduct}
+              className="p-2.5 rounded-lg text-red-600 bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Eliminar serie"
+              title="Eliminar Serie"
+            >
+              <TrashIcon className="h-5 w-5" />
+            </button>
           </div>
         )}
       </div>
@@ -336,6 +349,16 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
                 productName={`${selectedProduct.seriesName} (${selectedProduct.sku})`}
             />
         )}
+
+      {/* Floating Action Button */}
+      <button
+        onClick={onAddProduct}
+        className="fixed bottom-8 right-8 w-14 h-14 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-40"
+        aria-label="Agregar nueva obra seriada"
+        title="Agregar nueva obra seriada"
+      >
+        <PlusIcon className="h-7 w-7" />
+      </button>
     </div>
   );
 };

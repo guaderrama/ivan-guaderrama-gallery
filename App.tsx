@@ -15,6 +15,8 @@ import { UserBadge } from '@/features/auth/components/UserBadge';
 import { useArtworks } from '@/features/artwork-management/hooks/useArtworks';
 import { useNumberedEditions } from '@/features/numbered-editions/hooks/useNumberedEditions';
 import { useMiniWorks } from '@/features/mini-works/hooks/useMiniWorks';
+import CoursesManager from '@/features/courses/components/CoursesManager';
+
 
 // 🔧 LAZY LOAD problematic components (AI features with external deps)
 const GenerateNameModal = lazy(() => import('@/features/ai-naming/components/GenerateNameModal'));
@@ -31,7 +33,7 @@ const initialShippingSettings: ShippingSettings = {
   divisorVolumetrico: 5000,
 };
 
-type ActiveTab = 'catalog' | 'seriadas' | 'miniWorks' | 'simulator';
+type ActiveTab = 'catalog' | 'seriadas' | 'miniWorks' | 'simulator' | 'courses';
 
 // TabButton component for consistent tab styling
 interface TabButtonProps {
@@ -455,6 +457,12 @@ const App: React.FC = () => {
           isActive={activeTab === 'simulator'}
           onClick={() => setActiveTab('simulator')}
         />
+        <TabButton
+          tabName="courses"
+          label="Cursos"
+          isActive={activeTab === 'courses'}
+          onClick={() => setActiveTab('courses')}
+        />
       </nav>
 
       {/* Catalog Tab */}
@@ -556,6 +564,10 @@ const App: React.FC = () => {
           onArchive={handleArchiveMiniWork}
         />
       )}
+      
+      {/* Courses Tab */}
+      {activeTab === 'courses' && <CoursesManager />}
+
 
       {/* Simulator Tab - LAZY LOADED */}
       {activeTab === 'simulator' && (
@@ -616,6 +628,7 @@ const App: React.FC = () => {
         isOpen={isAddNumberedProductModalOpen}
         onClose={() => setIsAddNumberedProductModalOpen(false)}
         onSave={handleAddNumberedProduct}
+        existingSkus={allExistingSkus}
       />
 
       {editingSeriesProduct && (

@@ -34,12 +34,38 @@ export const editionsService = {
    */
   async createSeries(seriesData: NewNumberedProductData): Promise<string> {
     try {
+      console.log('🆕 [SERVICE] Creating new series:', seriesData);
       const seriesRef = collection(db, SERIES_COLLECTION);
       const docRef = await addDoc(seriesRef, {
         ...seriesData,
         seriesStatus: 'active',
         createdAt: serverTimestamp(),
       });
+      console.log('✅ [SERVICE] Series created with ID:', docRef.id);
+
+      // Create all editions for this series
+      const totalEditions = seriesData.totalEditions || 1;
+      console.log(`🔢 [SERVICE] Creating ${totalEditions} editions for series ${docRef.id}...`);
+
+      const editionsRef = collection(db, SERIES_COLLECTION, docRef.id, EDITIONS_SUBCOLLECTION);
+      const editionPromises = [];
+
+      for (let i = 1; i <= totalEditions; i++) {
+        const editionData = {
+          editionNumber: i,
+          editionStatus: 'active' as EditionStatus,
+          clientName: '',
+          gallerySeller: '',
+          saleDate: null,
+          notes: '',
+          createdAt: serverTimestamp(),
+        };
+        editionPromises.push(addDoc(editionsRef, editionData));
+      }
+
+      await Promise.all(editionPromises);
+      console.log(`✅ [SERVICE] Created ${totalEditions} editions successfully`);
+
       return docRef.id;
     } catch (error) {
       console.error('Error creating series:', error);
