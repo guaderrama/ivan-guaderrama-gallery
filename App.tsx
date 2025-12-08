@@ -550,10 +550,8 @@ const App: React.FC = () => {
       {activeTab === 'miniWorks' && (
         <MiniWorksManager
           works={filteredMiniWorks}
-          showArchived={showArchivedMiniWorks}
-          onToggleArchived={() => setShowArchivedMiniWorks(!showArchivedMiniWorks)}
-          onAdd={() => setIsAddMiniWorkModalOpen(true)}
-          onGenerateName={() => setIsGenerateNameModalOpen(true)}
+          isArchivedView={showArchivedMiniWorks}
+          onOpenGenerateNameModal={() => setIsGenerateNameModalOpen(true)}
           onEdit={setEditingMiniWork}
           onArchive={handleArchiveMiniWork}
         />
@@ -577,7 +575,7 @@ const App: React.FC = () => {
       <SettingsModal
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}
-        settings={shippingSettings}
+        currentSettings={shippingSettings}
         onSave={handleSaveSettings}
       />
 
