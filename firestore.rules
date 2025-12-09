@@ -64,7 +64,15 @@ service cloud.firestore {
       allow create: if isAdmin();
       allow update, delete: if false; // Immutable once created
     }
-    
+
+    // PDF Courses collection
+    match /pdf-courses/{courseId} {
+      // Allow read for authenticated users
+      allow read: if isAuthenticated();
+      // Only admins can create/update/delete
+      allow create, update, delete: if isAdmin();
+    }
+
     // Users collection
     match /users/{userId} {
       // Users can read their own data

@@ -53,3 +53,20 @@ export interface Course {
   modules: CourseModule[];
   quiz?: QuizQuestion[];
 }
+
+// --- PDF Course Types (for uploaded courses with AI-generated content) ---
+export interface PDFCourse {
+  id: string;
+  title: string;
+  subtitle?: string;
+  description?: string;
+  pdfUrl: string;
+  pdfFileName: string;
+  thumbnailUrl?: string;
+  createdAt: Date;
+  updatedAt?: Date;
+  // AI-generated content
+  isProcessed?: boolean;
+  modules?: CourseModule[];
+  quiz?: QuizQuestion[];
+}
