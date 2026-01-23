@@ -108,10 +108,10 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
     try {
       setIsUploadingImage(true);
 
-      // Validate file size (max 2MB)
-      if (file.size > 2 * 1024 * 1024) {
+      // Validate file size (max 100MB)
+      if (file.size > 100 * 1024 * 1024) {
         console.error('❌ [SERIES IMAGE] File too large:', (file.size / 1024 / 1024).toFixed(2) + 'MB');
-        alert("La imagen es muy grande. El límite es 2MB.");
+        alert("La imagen es muy grande. El límite es 100MB.");
         setIsUploadingImage(false);
         return;
       }

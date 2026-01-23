@@ -122,10 +122,10 @@ const ProductForm: React.FC<ProductFormProps> = (
       setIsUploadingImage(true);
       setError(null);
 
-      // Validate file size (max 2MB)
-      if (file.size > 2 * 1024 * 1024) {
+      // Validate file size (max 100MB)
+      if (file.size > 100 * 1024 * 1024) {
         console.error('❌ [IMAGE UPLOAD] File too large:', (file.size / 1024 / 1024).toFixed(2) + 'MB');
-        setError("La imagen es muy grande. El límite es 2MB.");
+        setError("La imagen es muy grande. El límite es 100MB.");
         setIsUploadingImage(false);
         return;
       }
@@ -266,7 +266,7 @@ const ProductForm: React.FC<ProductFormProps> = (
         
         <div>
           <label className="block text-sm font-bold text-gray-700 mb-2">
-            Imagen del Producto (Opcional, máx 2MB)
+            Imagen del Producto (Opcional, máx 100MB)
           </label>
           <div className="mt-1 flex items-center gap-4">
             {imagePreview && <img src={imagePreview} alt="Preview" className="h-16 w-16 object-cover rounded-md border" />}

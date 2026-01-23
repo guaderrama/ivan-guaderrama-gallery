@@ -34,8 +34,8 @@ const AddNumberedProductModal: React.FC<AddNumberedProductModalProps> = ({ isOpe
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) { // 2MB limit
-        setError("La imagen es muy grande. El límite es 2MB.");
+      if (file.size > 100 * 1024 * 1024) { // 100MB limit
+        setError("La imagen es muy grande. El límite es 100MB.");
         return;
       }
       const reader = new FileReader();

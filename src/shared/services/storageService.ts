@@ -21,9 +21,9 @@ export const storageService = {
    */
   async uploadImage(file: File, path: string): Promise<string> {
     try {
-      // Validate file size (max 2MB)
-      if (file.size > 2 * 1024 * 1024) {
-        throw new Error('El archivo es demasiado grande. El límite es 2MB.');
+      // Validate file size (max 100MB)
+      if (file.size > 100 * 1024 * 1024) {
+        throw new Error('El archivo es demasiado grande. El límite es 100MB.');
       }
 
       // Validate file type
