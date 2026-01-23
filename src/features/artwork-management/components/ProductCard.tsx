@@ -14,8 +14,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onViewDetail
   return (
     <div className="group relative break-inside-avoid overflow-hidden rounded-lg shadow-sm hover:shadow-xl transition-shadow duration-300">
       {product.vendido && (
-        <div className="absolute inset-0 bg-white/75 backdrop-blur-sm flex items-center justify-center z-40 pointer-events-none">
-          <span className="text-3xl font-black font-serif text-gray-900 border-4 border-gray-900 px-8 py-3 rounded-md transform -rotate-12">
+        <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none">
+          <span className="text-3xl font-black font-serif text-white bg-red-600 border-4 border-white px-8 py-3 rounded-md transform -rotate-12 shadow-lg">
             VENDIDO
           </span>
         </div>

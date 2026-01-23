@@ -144,8 +144,8 @@ const App: React.FC = () => {
       if (!showArchived) {
         return product.status !== 'archived' && !product.vendido;
       }
-      // Si estamos mostrando archivados, mostrar todo
-      return true;
+      // Si estamos mostrando archivados, mostrar SOLO las vendidas
+      return product.vendido === true;
     });
 
     if (selectedCategory !== 'ALL') {
