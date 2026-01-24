@@ -16,6 +16,8 @@ import { useArtworks } from '@/features/artwork-management/hooks/useArtworks';
 import { useNumberedEditions } from '@/features/numbered-editions/hooks/useNumberedEditions';
 import { useMiniWorks } from '@/features/mini-works/hooks/useMiniWorks';
 import CoursesManager from '@/features/courses/components/CoursesManager';
+import { RelationshipsManager } from '@/features/relationships/components';
+import type { InterestedArtwork } from '@/features/relationships/types';
 
 
 // 🔧 LAZY LOAD problematic components (AI features with external deps)
@@ -33,7 +35,7 @@ const initialShippingSettings: ShippingSettings = {
   divisorVolumetrico: 5000,
 };
 
-type ActiveTab = 'catalog' | 'seriadas' | 'miniWorks' | 'simulator' | 'courses';
+type ActiveTab = 'catalog' | 'seriadas' | 'miniWorks' | 'simulator' | 'courses' | 'relationships';
 
 // TabButton component for consistent tab styling
 interface TabButtonProps {
@@ -463,6 +465,12 @@ const App: React.FC = () => {
           isActive={activeTab === 'courses'}
           onClick={() => setActiveTab('courses')}
         />
+        <TabButton
+          tabName="relationships"
+          label="Relaciones"
+          isActive={activeTab === 'relationships'}
+          onClick={() => setActiveTab('relationships')}
+        />
       </nav>
 
       {/* Catalog Tab */}
@@ -568,6 +576,18 @@ const App: React.FC = () => {
       {/* Courses Tab */}
       {activeTab === 'courses' && <CoursesManager />}
 
+      {/* Relationships Tab */}
+      {activeTab === 'relationships' && (
+        <RelationshipsManager
+          availableArtworks={catalog.map(p => ({
+            id: p.id.toString(),
+            nombre: p.nombre,
+            sku: p.sku,
+            category: p.category || 'ORIGINAL',
+            imageUrl: p.imagenUrl
+          }))}
+        />
+      )}
 
       {/* Simulator Tab - LAZY LOADED */}
       {activeTab === 'simulator' && (

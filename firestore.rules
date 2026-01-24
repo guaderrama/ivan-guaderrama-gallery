@@ -73,6 +73,14 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // Relationships collection (CRM)
+    match /relationships/{relationshipId} {
+      // Allow read for authenticated users
+      allow read: if isAuthenticated();
+      // Only admins can create/update/delete
+      allow create, update, delete: if isAdmin();
+    }
+
     // Users collection
     match /users/{userId} {
       // Users can read their own data
