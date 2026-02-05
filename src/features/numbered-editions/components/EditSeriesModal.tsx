@@ -76,11 +76,6 @@ const EditSeriesModal: React.FC<EditSeriesModalProps> = ({ onClose, onSave, prod
       return;
     }
 
-    if (newTotalEditions < product.editions.length) {
-      setError(`No puedes reducir a menos de ${product.editions.length} (ediciones existentes).`);
-      return;
-    }
-
     if (newTotalEditions <= 0) {
       setError('El numero de ediciones debe ser mayor que cero.');
       return;
