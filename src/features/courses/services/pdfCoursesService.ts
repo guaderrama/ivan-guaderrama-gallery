@@ -11,7 +11,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import type { PDFCourse } from '../types';
+import type { PDFCourse, CourseModule, QuizQuestion } from '../types';
 import { extractTextFromPDF, generateCourseFromText } from './courseGeneratorService';
 
 const PDF_COURSES_COLLECTION = 'pdf-courses';
@@ -41,8 +41,8 @@ export const pdfCoursesService = {
         title: string;
         subtitle?: string;
         description: string;
-        modules?: any[];
-        quiz?: any[];
+        modules?: CourseModule[];
+        quiz?: QuizQuestion[];
       } = {
         title,
         description: description || '',

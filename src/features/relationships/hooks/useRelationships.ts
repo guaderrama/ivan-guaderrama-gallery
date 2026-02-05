@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import type { Relationship, NewRelationship, PipelineStage, Interaction } from '../types';
+import type { Relationship, NewRelationship, PipelineStage } from '../types';
 import {
   subscribeToRelationships,
   createRelationship,
@@ -74,7 +74,7 @@ export const useRelationships = (): UseRelationshipsReturn => {
   const create = async (data: NewRelationship): Promise<string> => {
     try {
       return await createRelationship(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ [HOOK] Error creating:', err);
       throw err;
     }
@@ -84,7 +84,7 @@ export const useRelationships = (): UseRelationshipsReturn => {
   const update = async (id: string, updates: Partial<Relationship>): Promise<void> => {
     try {
       await updateRelationship(id, updates);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ [HOOK] Error updating:', err);
       throw err;
     }
@@ -94,7 +94,7 @@ export const useRelationships = (): UseRelationshipsReturn => {
   const remove = async (id: string): Promise<void> => {
     try {
       await deleteRelationship(id);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ [HOOK] Error deleting:', err);
       throw err;
     }
@@ -106,7 +106,7 @@ export const useRelationships = (): UseRelationshipsReturn => {
       const current = relationships.find(r => r.id === id);
       if (!current) throw new Error('Relationship not found');
       await changeStage(id, stage, current);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ [HOOK] Error changing stage:', err);
       throw err;
     }
@@ -118,7 +118,7 @@ export const useRelationships = (): UseRelationshipsReturn => {
       const current = relationships.find(r => r.id === id);
       if (!current) throw new Error('Relationship not found');
       await addInteraction(id, note, actionTaken, current.interactions);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ [HOOK] Error logging interaction:', err);
       throw err;
     }

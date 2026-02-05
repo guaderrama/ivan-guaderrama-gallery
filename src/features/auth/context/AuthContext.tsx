@@ -99,11 +99,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(false);
 
       return true;
-    } catch (err: any) {
+    } catch (err: unknown) {
       let errorMessage = 'Failed to sign in';
+      const firebaseErr = err as { code?: string; message?: string };
 
       // Firebase error codes
-      switch (err.code) {
+      switch (firebaseErr.code) {
         case 'auth/user-not-found':
           errorMessage = 'No user found with this email';
           break;
@@ -120,7 +121,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           errorMessage = 'Too many failed attempts. Try again later';
           break;
         default:
-          errorMessage = err.message || 'Failed to sign in';
+          errorMessage = firebaseErr.message || 'Failed to sign in';
       }
 
       setError(errorMessage);
@@ -155,10 +156,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(false);
 
       return true;
-    } catch (err: any) {
+    } catch (err: unknown) {
       let errorMessage = 'Failed to create account';
+      const firebaseErr = err as { code?: string; message?: string };
 
-      switch (err.code) {
+      switch (firebaseErr.code) {
         case 'auth/email-already-in-use':
           errorMessage = 'Email already in use';
           break;
@@ -169,7 +171,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           errorMessage = 'Password should be at least 6 characters';
           break;
         default:
-          errorMessage = err.message || 'Failed to create account';
+          errorMessage = firebaseErr.message || 'Failed to create account';
       }
 
       setError(errorMessage);
@@ -188,8 +190,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setError(null);
       await firebaseSignOut(auth);
       setUser(null);
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign out');
+    } catch (err: unknown) {
+      const firebaseErr = err as { message?: string };
+      setError(firebaseErr.message || 'Failed to sign out');
       console.error('Sign out error:', err);
       throw err;
     }

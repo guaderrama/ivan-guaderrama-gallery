@@ -5,13 +5,18 @@ import App from './App';
 import { AuthProvider } from './src/features/auth/context/AuthContext';
 
 // Error Boundary
-class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: any}> {
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundary extends React.Component<{children: React.ReactNode}, ErrorBoundaryState> {
   constructor(props: {children: React.ReactNode}) {
     super(props);
     this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError(error: any) {
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
   }
 
@@ -19,7 +24,7 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
     if (this.state.hasError) {
       return (
         <div style={{padding: '20px', background: '#fee', minHeight: '100vh'}}>
-          <h1 style={{color: '#c00'}}>❌ Error: {this.state.error?.toString()}</h1>
+          <h1 style={{color: '#c00'}}>Error: {this.state.error?.message}</h1>
           <pre style={{background: '#eee', padding: '10px', overflow: 'auto'}}>{this.state.error?.stack}</pre>
         </div>
       );

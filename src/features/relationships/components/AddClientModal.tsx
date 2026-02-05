@@ -73,8 +73,8 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
         interestedArtworks: []
       });
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Error al guardar');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error al guardar');
     } finally {
       setIsSaving(false);
     }

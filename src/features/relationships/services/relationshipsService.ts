@@ -8,7 +8,8 @@ import {
   query,
   orderBy,
   Timestamp,
-  where
+  QueryDocumentSnapshot,
+  DocumentData
 } from 'firebase/firestore';
 import { db } from '@/shared/lib/firebase';
 import type { Relationship, NewRelationship, PipelineStage, Interaction } from '../types';
@@ -16,10 +17,11 @@ import type { Relationship, NewRelationship, PipelineStage, Interaction } from '
 const COLLECTION_NAME = 'relationships';
 
 // Convertir Firestore doc a Relationship
-const docToRelationship = (doc: any): Relationship => {
-  const data = doc.data();
+
+const docToRelationship = (docSnap: QueryDocumentSnapshot<DocumentData>): Relationship => {
+  const data = docSnap.data();
   return {
-    id: doc.id,
+    id: docSnap.id,
     name: data.name || '',
     email: data.email || '',
     phone: data.phone || '',
@@ -31,9 +33,9 @@ const docToRelationship = (doc: any): Relationship => {
     nextActionDescription: data.nextActionDescription || '',
     nextActionDate: data.nextActionDate?.toDate(),
     interestedArtworks: data.interestedArtworks || [],
-    interactions: (data.interactions || []).map((i: any) => ({
+    interactions: (data.interactions || []).map((i: Record<string, unknown>) => ({
       ...i,
-      date: i.date?.toDate() || new Date()
+      date: (i.date as { toDate?: () => Date })?.toDate?.() || new Date()
     })),
     createdAt: data.createdAt?.toDate() || new Date(),
     updatedAt: data.updatedAt?.toDate() || new Date(),
@@ -91,7 +93,7 @@ export const updateRelationship = async (
 
   const docRef = doc(db, COLLECTION_NAME, id);
 
-  const updateData: any = {
+  const updateData: Record<string, unknown> = {
     ...updates,
     updatedAt: Timestamp.now()
   };
