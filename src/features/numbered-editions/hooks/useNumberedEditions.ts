@@ -25,8 +25,8 @@ interface UseNumberedEditionsReturn {
   archiveEdition: (seriesId: string, editionId: string) => Promise<boolean>;
   /** Delete an edition (soft delete) */
   deleteEdition: (seriesId: string, editionId: string) => Promise<boolean>;
-  /** Add editions when totalEditions increases */
-  addEditionsToSeries: (seriesId: string, currentCount: number, newTotal: number) => Promise<boolean>;
+  /** Sync editions to match desired total */
+  syncEditions: (seriesId: string, newTotal: number) => Promise<boolean>;
   /** Refresh series manually */
   refresh: () => Promise<void>;
 }
@@ -273,18 +273,18 @@ export function useNumberedEditions(): UseNumberedEditionsReturn {
     [fetchSeries]
   );
 
-  // Add editions to series
-  const addEditionsToSeries = useCallback(
-    async (seriesId: string, currentCount: number, newTotal: number): Promise<boolean> => {
+  // Sync editions to match desired total
+  const syncEditions = useCallback(
+    async (seriesId: string, newTotal: number): Promise<boolean> => {
       try {
         setError(null);
-        await editionsService.addEditionsToSeries(seriesId, currentCount, newTotal);
+        await editionsService.syncEditions(seriesId, newTotal);
         await fetchSeries();
         return true;
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to add editions';
+        const message = err instanceof Error ? err.message : 'Failed to sync editions';
         setError(message);
-        console.error('Error adding editions:', err);
+        console.error('Error syncing editions:', err);
         return false;
       }
     },
@@ -303,7 +303,7 @@ export function useNumberedEditions(): UseNumberedEditionsReturn {
     updateEdition,
     archiveEdition,
     deleteEdition,
-    addEditionsToSeries,
+    syncEditions,
     refresh: fetchSeries,
   };
 }

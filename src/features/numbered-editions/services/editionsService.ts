@@ -234,26 +234,70 @@ export const editionsService = {
   },
 
   /**
-   * Add missing editions when totalEditions is increased
+   * Sync editions to match the desired total.
+   * - Creates missing edition numbers (1..newTotal)
+   * - Soft-deletes editions with editionNumber > newTotal
    */
-  async addEditionsToSeries(seriesId: string, currentCount: number, newTotal: number): Promise<void> {
-    if (newTotal <= currentCount) return;
-    console.log(`🔢 [SERVICE] Adding editions ${currentCount + 1} to ${newTotal}`);
+  async syncEditions(seriesId: string, newTotal: number): Promise<void> {
+    console.log(`🔢 [SERVICE] Syncing editions for series ${seriesId} to total: ${newTotal}`);
     const editionsRef = collection(db, SERIES_COLLECTION, seriesId, EDITIONS_SUBCOLLECTION);
-    const promises = [];
-    for (let i = currentCount + 1; i <= newTotal; i++) {
-      promises.push(addDoc(editionsRef, {
-        editionNumber: i,
-        editionStatus: 'active' as EditionStatus,
-        clientName: '',
-        gallerySeller: '',
-        saleDate: null,
-        notes: '',
-        createdAt: serverTimestamp(),
-      }));
+    const snapshot = await getDocs(query(editionsRef));
+
+    // Map existing edition numbers to their doc IDs and status
+    const existingEditions = new Map<number, { id: string; status: string }>();
+    snapshot.docs.forEach(d => {
+      const data = d.data();
+      const num = data.editionNumber as number;
+      // If duplicate, keep the first one found
+      if (!existingEditions.has(num)) {
+        existingEditions.set(num, { id: d.id, status: data.editionStatus || data.status || 'active' });
+      } else {
+        // Duplicate - soft delete it
+        console.log(`🗑️ [SERVICE] Removing duplicate edition #${num}`);
+        updateDoc(doc(db, SERIES_COLLECTION, seriesId, EDITIONS_SUBCOLLECTION, d.id), {
+          editionStatus: 'deleted', status: 'deleted', updatedAt: serverTimestamp(),
+        });
+      }
+    });
+
+    const promises: Promise<unknown>[] = [];
+
+    // Create missing editions (1..newTotal)
+    for (let i = 1; i <= newTotal; i++) {
+      if (!existingEditions.has(i)) {
+        console.log(`➕ [SERVICE] Creating edition #${i}`);
+        promises.push(addDoc(editionsRef, {
+          editionNumber: i,
+          editionStatus: 'active' as EditionStatus,
+          clientName: '',
+          gallerySeller: '',
+          saleDate: null,
+          notes: '',
+          createdAt: serverTimestamp(),
+        }));
+      } else {
+        // If it was deleted, reactivate it
+        const existing = existingEditions.get(i)!;
+        if (existing.status === 'deleted') {
+          promises.push(updateDoc(doc(db, SERIES_COLLECTION, seriesId, EDITIONS_SUBCOLLECTION, existing.id), {
+            editionStatus: 'active', status: 'active', updatedAt: serverTimestamp(),
+          }));
+        }
+      }
     }
+
+    // Soft-delete editions above newTotal
+    existingEditions.forEach((val, num) => {
+      if (num > newTotal && val.status !== 'deleted') {
+        console.log(`🗑️ [SERVICE] Soft-deleting edition #${num}`);
+        promises.push(updateDoc(doc(db, SERIES_COLLECTION, seriesId, EDITIONS_SUBCOLLECTION, val.id), {
+          editionStatus: 'deleted', status: 'deleted', updatedAt: serverTimestamp(),
+        }));
+      }
+    });
+
     await Promise.all(promises);
-    console.log(`✅ [SERVICE] Added ${newTotal - currentCount} new editions`);
+    console.log(`✅ [SERVICE] Sync complete for series ${seriesId}`);
   },
 
   // ============= EDITIONS OPERATIONS =============
