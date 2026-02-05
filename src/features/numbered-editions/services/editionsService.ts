@@ -233,6 +233,29 @@ export const editionsService = {
     return unsubscribe;
   },
 
+  /**
+   * Add missing editions when totalEditions is increased
+   */
+  async addEditionsToSeries(seriesId: string, currentCount: number, newTotal: number): Promise<void> {
+    if (newTotal <= currentCount) return;
+    console.log(`🔢 [SERVICE] Adding editions ${currentCount + 1} to ${newTotal}`);
+    const editionsRef = collection(db, SERIES_COLLECTION, seriesId, EDITIONS_SUBCOLLECTION);
+    const promises = [];
+    for (let i = currentCount + 1; i <= newTotal; i++) {
+      promises.push(addDoc(editionsRef, {
+        editionNumber: i,
+        editionStatus: 'active' as EditionStatus,
+        clientName: '',
+        gallerySeller: '',
+        saleDate: null,
+        notes: '',
+        createdAt: serverTimestamp(),
+      }));
+    }
+    await Promise.all(promises);
+    console.log(`✅ [SERVICE] Added ${newTotal - currentCount} new editions`);
+  },
+
   // ============= EDITIONS OPERATIONS =============
 
   /**

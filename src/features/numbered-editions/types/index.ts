@@ -21,6 +21,7 @@ export interface Edition {
 export interface NumberedProduct {
   id: string;
   seriesName: string;
+  name?: string; // backward compat with existing Firestore data
   sku: string;
   category: ProductCategory;
   description: string;

@@ -106,6 +106,7 @@ const App: React.FC = () => {
     updateEdition,
     archiveEdition,
     deleteEdition,
+    addEditionsToSeries,
   } = useNumberedEditions();
 
   const {
@@ -296,7 +297,16 @@ const App: React.FC = () => {
 
   const handleEditSeries = async (productId: string, updates: Partial<NumberedProduct>) => {
     try {
+      const currentProduct = numberedProducts.find(p => p.id === productId);
+      const currentEditionCount = currentProduct?.editions.length || 0;
+
       await updateSeries(productId, updates);
+
+      // Auto-create new editions if totalEditions increased
+      if (updates.totalEditions && updates.totalEditions > currentEditionCount) {
+        await addEditionsToSeries(productId, currentEditionCount, updates.totalEditions);
+      }
+
       setEditingSeriesProduct(null);
     } catch (error) {
       console.error('Error updating series:', error);
