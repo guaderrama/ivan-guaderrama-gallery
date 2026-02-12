@@ -1,7 +1,7 @@
 import type { User as FirebaseUser } from 'firebase/auth';
 
 // ─── Role Definitions ───────────────────────────────────
-export const ROLES = ['superadmin', 'editor_catalogo', 'gestor_crm', 'gestor_cursos', 'visualizador'] as const;
+export const ROLES = ['superadmin', 'editor_catalogo', 'editor_seriadas', 'gestor_crm', 'gestor_cursos', 'visualizador'] as const;
 export type AppRole = typeof ROLES[number];
 
 // ─── Permission Definitions ─────────────────────────────
@@ -27,6 +27,10 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
     'editions:read', 'editions:write',
     'simulator:access',
   ],
+  editor_seriadas: [
+    'editions:read', 'editions:write',
+    'simulator:access',
+  ],
   gestor_crm: [
     'crm:read', 'crm:write',
     'simulator:access',
@@ -46,6 +50,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
 export const ROLE_LABELS: Record<AppRole, string> = {
   superadmin: 'Super Admin',
   editor_catalogo: 'Editor de Catálogo',
+  editor_seriadas: 'Editor de Seriadas',
   gestor_crm: 'Gestor CRM',
   gestor_cursos: 'Gestor de Cursos',
   visualizador: 'Visualizador',
@@ -54,6 +59,7 @@ export const ROLE_LABELS: Record<AppRole, string> = {
 export const ROLE_COLORS: Record<AppRole, string> = {
   superadmin: 'text-red-600 font-semibold',
   editor_catalogo: 'text-blue-600 font-semibold',
+  editor_seriadas: 'text-purple-600 font-semibold',
   gestor_crm: 'text-green-600 font-semibold',
   gestor_cursos: 'text-orange-600 font-semibold',
   visualizador: 'text-gray-600 font-semibold',

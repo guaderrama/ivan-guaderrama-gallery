@@ -19,7 +19,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 admin.initializeApp();
 const db = admin.firestore();
 
-const VALID_ROLES = ['superadmin', 'editor_catalogo', 'gestor_crm', 'gestor_cursos', 'visualizador'];
+const VALID_ROLES = ['superadmin', 'editor_catalogo', 'editor_seriadas', 'gestor_crm', 'gestor_cursos', 'visualizador'];
 
 // ─── Role Helpers ───────────────────────────────────────
 

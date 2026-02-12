@@ -21,11 +21,15 @@ service cloud.firestore {
     }
 
     function canReadCatalog() {
-      return hasRole('superadmin') || hasRole('editor_catalogo') || hasRole('visualizador');
+      return hasRole('superadmin') || hasRole('editor_catalogo') || hasRole('editor_seriadas') || hasRole('visualizador');
     }
 
     function canWriteCatalog() {
       return hasRole('superadmin') || hasRole('editor_catalogo');
+    }
+
+    function canWriteEditions() {
+      return hasRole('superadmin') || hasRole('editor_catalogo') || hasRole('editor_seriadas');
     }
 
     function isCrmManager() {
@@ -37,7 +41,7 @@ service cloud.firestore {
     }
 
     function hasAnyRole() {
-      return hasRole('superadmin') || hasRole('editor_catalogo') || hasRole('gestor_crm') || hasRole('gestor_cursos') || hasRole('visualizador');
+      return hasRole('superadmin') || hasRole('editor_catalogo') || hasRole('editor_seriadas') || hasRole('gestor_crm') || hasRole('gestor_cursos') || hasRole('visualizador');
     }
 
     // ─── Artworks collection (Catalogo General) ────────────
@@ -58,12 +62,12 @@ service cloud.firestore {
     match /numbered-editions/{seriesId} {
       allow list: if true;
       allow get: if resource.data.seriesStatus == 'active' || canReadCatalog();
-      allow create, update, delete: if canWriteCatalog();
+      allow create, update, delete: if canWriteEditions();
 
       match /editions/{editionId} {
         allow list: if true;
         allow get: if resource.data.status == 'active' || canReadCatalog();
-        allow create, update, delete: if canWriteCatalog();
+        allow create, update, delete: if canWriteEditions();
       }
     }
 
