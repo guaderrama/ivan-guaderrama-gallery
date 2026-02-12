@@ -9,6 +9,7 @@
  * 5. listUsers - List all users (superadmin only)
  * 6. migrateExistingRoles - One-time migration from admin→superadmin
  * 7. changeUserPassword - Change a user's password (superadmin only)
+ * 8. createUser - Create a new user with email, password and roles (superadmin only)
  */
 
 import * as functions from 'firebase-functions';
@@ -254,6 +255,75 @@ export const migrateExistingRoles = functions.https.onCall(async (_data, context
   } catch (error: any) {
     console.error('Migration failed:', error);
     throw new functions.https.HttpsError('internal', `Migration failed: ${error.message}`);
+  }
+});
+
+// ─── FUNCTION 8: Create User ────────────────────────────
+
+export const createUser = functions.https.onCall(async (data, context) => {
+  const callerId = requireAuth(context);
+
+  const callerIsSuperAdmin = await checkSuperAdmin(callerId);
+  if (!callerIsSuperAdmin) {
+    throw new functions.https.HttpsError('permission-denied', 'Solo superadmin puede crear usuarios');
+  }
+
+  const { email, password, roles } = data;
+
+  if (!email || typeof email !== 'string') {
+    throw new functions.https.HttpsError('invalid-argument', 'Email es requerido');
+  }
+  if (!password || typeof password !== 'string' || password.length < 6) {
+    throw new functions.https.HttpsError('invalid-argument', 'La contraseña debe tener al menos 6 caracteres');
+  }
+  if (!Array.isArray(roles) || roles.length === 0) {
+    throw new functions.https.HttpsError('invalid-argument', 'Debes asignar al menos un rol');
+  }
+  const invalidRoles = roles.filter((r: string) => !VALID_ROLES.includes(r));
+  if (invalidRoles.length > 0) {
+    throw new functions.https.HttpsError('invalid-argument', `Roles inválidos: ${invalidRoles.join(', ')}`);
+  }
+
+  try {
+    // Create Firebase Auth user
+    const userRecord = await admin.auth().createUser({
+      email,
+      password,
+    });
+
+    // Set Custom Claims
+    await admin.auth().setCustomUserClaims(userRecord.uid, { roles });
+
+    // Create Firestore document
+    await db.collection('users').doc(userRecord.uid).set({
+      email,
+      roles,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // Audit log
+    await db.collection('audit-log').add({
+      action: 'user_created',
+      targetUid: userRecord.uid,
+      email,
+      roles,
+      performedBy: callerId,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    console.log(`User created: ${email} (${userRecord.uid}) with roles [${roles.join(', ')}] by ${callerId}`);
+    return { success: true, uid: userRecord.uid };
+  } catch (error: any) {
+    console.error('Error creating user:', error);
+    if (error.code === 'auth/email-already-exists') {
+      throw new functions.https.HttpsError('already-exists', 'Ya existe un usuario con este email');
+    }
+    if (error.code === 'auth/invalid-email') {
+      throw new functions.https.HttpsError('invalid-argument', 'Email inválido');
+    }
+    if (error instanceof functions.https.HttpsError) throw error;
+    throw new functions.https.HttpsError('internal', `Error al crear usuario: ${error.message}`);
   }
 });
 

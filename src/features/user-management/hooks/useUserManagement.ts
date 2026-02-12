@@ -75,5 +75,28 @@ export function useUserManagement() {
     }
   }, [functions]);
 
-  return { users, loading, error, fetchUsers, setUserRoles, changeUserPassword };
+  const createUser = useCallback(async (email: string, password: string, roles: AppRole[]) => {
+    setError(null);
+    try {
+      const createUserFn = httpsCallable<{ email: string; password: string; roles: string[] }, { success: boolean; uid: string }>(functions, 'createUser');
+      const result = await createUserFn({ email, password, roles });
+      // Add to local state
+      const newUser: ManagedUser = {
+        uid: result.data.uid,
+        email,
+        roles,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setUsers(prev => [newUser, ...prev]);
+      return result.data.uid;
+    } catch (err: any) {
+      const msg = err?.message || 'Error al crear usuario';
+      setError(msg);
+      console.error('Error creating user:', err);
+      throw err;
+    }
+  }, [functions]);
+
+  return { users, loading, error, fetchUsers, setUserRoles, changeUserPassword, createUser };
 }

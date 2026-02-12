@@ -4,9 +4,17 @@ import { ROLES, ROLE_LABELS, ROLE_COLORS } from '@/features/auth/types';
 import type { AppRole } from '@/features/auth/types';
 
 const UserManagementPanel: React.FC = () => {
-  const { users, loading, error, fetchUsers, setUserRoles, changeUserPassword } = useUserManagement();
+  const { users, loading, error, fetchUsers, setUserRoles, changeUserPassword, createUser } = useUserManagement();
   const [changingUid, setChangingUid] = useState<string | null>(null);
   const [pendingRoles, setPendingRoles] = useState<Record<string, AppRole[]>>({});
+
+  // Create user state
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createEmail, setCreateEmail] = useState('');
+  const [createPassword, setCreatePassword] = useState('');
+  const [createRoles, setCreateRoles] = useState<AppRole[]>([]);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   // Password change state
   const [passwordUid, setPasswordUid] = useState<string | null>(null);
@@ -122,6 +130,43 @@ const UserManagementPanel: React.FC = () => {
     }
   };
 
+  const handleCreateUser = async () => {
+    setCreateError(null);
+
+    if (!createEmail.trim()) {
+      setCreateError('El email es requerido.');
+      return;
+    }
+    if (createPassword.length < 6) {
+      setCreateError('La contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+    if (createRoles.length === 0) {
+      setCreateError('Debes asignar al menos un rol.');
+      return;
+    }
+
+    setCreateLoading(true);
+    try {
+      await createUser(createEmail.trim(), createPassword, createRoles);
+      setShowCreateForm(false);
+      setCreateEmail('');
+      setCreatePassword('');
+      setCreateRoles([]);
+    } catch {
+      // error handled in hook, but show local too
+      setCreateError('Error al crear el usuario. Verifica los datos.');
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
+  const handleToggleCreateRole = (role: AppRole) => {
+    setCreateRoles(prev =>
+      prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
@@ -135,14 +180,107 @@ const UserManagementPanel: React.FC = () => {
 
   return (
     <div className="p-1">
-      <div className="mb-6">
-        <h2 className="text-3xl font-bold font-serif text-gray-900 text-center sm:text-left">
-          Gestión de Usuarios
-        </h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Asigna uno o más roles para controlar el acceso de cada usuario.
-        </p>
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 className="text-3xl font-bold font-serif text-gray-900 text-center sm:text-left">
+            Gestión de Usuarios
+          </h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Asigna uno o más roles para controlar el acceso de cada usuario.
+          </p>
+        </div>
+        {!showCreateForm && (
+          <button
+            onClick={() => { setShowCreateForm(true); setCreateError(null); }}
+            className="px-4 py-2 text-sm font-medium bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors whitespace-nowrap self-center sm:self-auto"
+          >
+            + Agregar Usuario
+          </button>
+        )}
       </div>
+
+      {/* Create user form */}
+      {showCreateForm && (
+        <div className="border border-blue-300 bg-blue-50/30 rounded-lg p-4 mb-6">
+          <p className="text-sm font-semibold text-gray-800 mb-3">Nuevo Usuario</p>
+          {createError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-md mb-3 text-xs">
+              {createError}
+            </div>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <input
+              type="email"
+              value={createEmail}
+              onChange={e => setCreateEmail(e.target.value)}
+              placeholder="Email"
+              disabled={createLoading}
+              className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+            />
+            <input
+              type="password"
+              value={createPassword}
+              onChange={e => setCreatePassword(e.target.value)}
+              placeholder="Contraseña (mín. 6)"
+              disabled={createLoading}
+              className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+            />
+          </div>
+          <div className="mb-3">
+            <p className="text-xs text-gray-600 mb-2">Roles:</p>
+            <div className="flex flex-wrap gap-2">
+              {ROLES.map(role => {
+                const isActive = createRoles.includes(role);
+                const colorClass = ROLE_COLORS[role].replace('font-semibold', '').trim();
+                return (
+                  <label
+                    key={role}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-all border ${
+                      isActive
+                        ? `${colorClass} bg-white border-current shadow-sm`
+                        : 'text-gray-400 border-gray-200 bg-gray-50 hover:border-gray-300'
+                    } ${createLoading ? 'opacity-50 pointer-events-none' : ''}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isActive}
+                      onChange={() => handleToggleCreateRole(role)}
+                      disabled={createLoading}
+                      className="sr-only"
+                    />
+                    <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center ${
+                      isActive ? 'bg-current border-current' : 'border-gray-300'
+                    }`}>
+                      {isActive && (
+                        <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </span>
+                    {ROLE_LABELS[role]}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleCreateUser}
+              disabled={createLoading}
+              className="px-4 py-2 text-xs font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              {createLoading ? 'Creando...' : 'Crear Usuario'}
+            </button>
+            <button
+              onClick={() => { setShowCreateForm(false); setCreateError(null); }}
+              disabled={createLoading}
+              className="px-4 py-2 text-xs font-medium text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
