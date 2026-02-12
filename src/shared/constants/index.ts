@@ -6,8 +6,7 @@ export const CATEGORY_COLORS: Record<ProductCategory, string> = {
   'METAL SCULPTURE': 'bg-yellow-400 text-gray-900',
   'WALL SCULPTURE': 'bg-indigo-500 text-white',
   'LIMITED EDITION': 'bg-gray-800 text-white',
-  'MINI ORIGINAL': 'bg-teal-500 text-white',
-  'MINI ORIGINAL SPECIAL': 'bg-purple-500 text-white',
+  'LIGHT EDITION': 'bg-teal-500 text-white',
 };
 
 // Placeholder SVG image as a Base64 data URL
