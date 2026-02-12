@@ -66,10 +66,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onViewDetail
       )}
       <div className="absolute top-3 left-3 flex flex-col gap-1 z-30">
         {product.galeria && (
-          <span className="bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg">Galeria</span>
+          <span className="bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg uppercase tracking-wider">Galeria</span>
         )}
         {product.bodega && (
-          <span className="bg-amber-600 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg">Bodega</span>
+          <span className="bg-amber-600 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg uppercase tracking-wider">Bodega</span>
         )}
       </div>
     </div>
