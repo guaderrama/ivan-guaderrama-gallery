@@ -8,8 +8,9 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/shared/lib/firebase';
-import type { AuthContextType, AuthUser, UserRole } from '../types';
-import { firebaseUserToAuthUser } from '../types';
+import type { AuthContextType, AuthUser, AppRole, Permission } from '../types';
+import { firebaseUserToAuthUser, ROLES } from '../types';
+import { rolesHavePermission, rolesHaveAnyPermission } from '../permissions';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -17,93 +18,99 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-/**
- * Auth Provider Component
- *
- * Manages authentication state globally:
- * - Listens to Firebase auth state changes
- * - Fetches user role from Firestore
- * - Provides sign in/up/out methods
- * - Exposes auth state to entire app
- */
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   /**
-   * Fetch user role from Firestore
+   * Fetch user roles: try Custom Claims first, fallback to Firestore
+   * Supports both new format (roles: []) and legacy format (role: string)
    */
-  const fetchUserRole = async (uid: string): Promise<'admin' | 'user'> => {
+  const fetchRoles = async (firebaseUser: FirebaseUser): Promise<AppRole[]> => {
     try {
-      const userDoc = await getDoc(doc(db, 'users', uid));
+      // 1. Try Custom Claims (authoritative after migration)
+      const tokenResult = await firebaseUser.getIdTokenResult();
 
-      if (userDoc.exists()) {
-        const userData = userDoc.data() as UserRole;
-        return userData.role || 'user';
+      // New format: roles array
+      const claimRoles = tokenResult.claims.roles as string[] | undefined;
+      if (Array.isArray(claimRoles) && claimRoles.length > 0) {
+        return claimRoles.filter(r => (ROLES as readonly string[]).includes(r)) as AppRole[];
       }
 
-      // If user doc doesn't exist, create it with default role
-      await setDoc(doc(db, 'users', uid), {
-        uid,
-        email: auth.currentUser?.email || '',
-        role: 'user',
+      // Legacy format: single role string
+      const claimRole = tokenResult.claims.role as string | undefined;
+      if (claimRole && (ROLES as readonly string[]).includes(claimRole)) {
+        return [claimRole as AppRole];
+      }
+
+      // 2. Fallback: read from Firestore (pre-migration / legacy)
+      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+
+        // New format: roles array in Firestore
+        if (Array.isArray(data.roles) && data.roles.length > 0) {
+          return data.roles.filter((r: string) => (ROLES as readonly string[]).includes(r)) as AppRole[];
+        }
+
+        // Legacy format: single role string
+        const firestoreRole = data.role as string;
+        if (firestoreRole === 'admin') return ['superadmin'];
+        if ((ROLES as readonly string[]).includes(firestoreRole)) {
+          return [firestoreRole as AppRole];
+        }
+      }
+
+      // 3. No roles found - create user doc with no roles
+      await setDoc(doc(db, 'users', firebaseUser.uid), {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email || '',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-      });
+      }, { merge: true });
 
-      return 'user';
+      return [];
     } catch (err) {
-      console.error('Error fetching user role:', err);
-      return 'user'; // Default to user role on error
+      console.error('Error fetching user roles:', err);
+      return [];
     }
   };
 
-  /**
-   * Listen to auth state changes
-   */
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       setLoading(true);
 
       if (firebaseUser) {
-        // User is signed in
-        const role = await fetchUserRole(firebaseUser.uid);
-        const authUser = firebaseUserToAuthUser(firebaseUser, role);
+        const roles = await fetchRoles(firebaseUser);
+        const authUser = firebaseUserToAuthUser(firebaseUser, roles);
         setUser(authUser);
       } else {
-        // User is signed out
         setUser(null);
       }
 
       setLoading(false);
     });
 
-    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
 
-  /**
-   * Sign in with email and password
-   */
   const signIn = async (email: string, password: string): Promise<boolean> => {
     try {
       setError(null);
       setLoading(true);
 
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const role = await fetchUserRole(userCredential.user.uid);
-      const authUser = firebaseUserToAuthUser(userCredential.user, role);
+      const roles = await fetchRoles(userCredential.user);
+      const authUser = firebaseUserToAuthUser(userCredential.user, roles);
 
       setUser(authUser);
       setLoading(false);
-
       return true;
     } catch (err: unknown) {
       let errorMessage = 'Failed to sign in';
       const firebaseErr = err as { code?: string; message?: string };
 
-      // Firebase error codes
       switch (firebaseErr.code) {
         case 'auth/user-not-found':
           errorMessage = 'No user found with this email';
@@ -127,14 +134,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setError(errorMessage);
       setLoading(false);
       console.error('Sign in error:', err);
-
       return false;
     }
   };
 
-  /**
-   * Sign up with email and password
-   */
   const signUp = async (email: string, password: string): Promise<boolean> => {
     try {
       setError(null);
@@ -142,19 +145,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
-      // Create user document in Firestore
       await setDoc(doc(db, 'users', userCredential.user.uid), {
         uid: userCredential.user.uid,
         email: userCredential.user.email,
-        role: 'user', // Default role
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
 
-      const authUser = firebaseUserToAuthUser(userCredential.user, 'user');
+      const authUser = firebaseUserToAuthUser(userCredential.user, []);
       setUser(authUser);
       setLoading(false);
-
       return true;
     } catch (err: unknown) {
       let errorMessage = 'Failed to create account';
@@ -177,14 +177,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setError(errorMessage);
       setLoading(false);
       console.error('Sign up error:', err);
-
       return false;
     }
   };
 
-  /**
-   * Sign out current user
-   */
   const signOut = async (): Promise<void> => {
     try {
       setError(null);
@@ -198,6 +194,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const userRoles = user?.roles ?? [];
+
+  const hasPermission = (permission: Permission): boolean => {
+    return rolesHavePermission(userRoles, permission);
+  };
+
+  const hasAnyPermission = (permissions: Permission[]): boolean => {
+    return rolesHaveAnyPermission(userRoles, permissions);
+  };
+
   const value: AuthContextType = {
     user,
     loading,
@@ -205,30 +211,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signIn,
     signUp,
     signOut,
-    isAdmin: user?.role === 'admin',
+    isAdmin: userRoles.includes('superadmin'),
+    hasPermission,
+    hasAnyPermission,
+    roles: userRoles,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-/**
- * useAuth Hook
- *
- * Access authentication context from any component
- *
- * @example
- * ```tsx
- * function MyComponent() {
- *   const { user, signIn, signOut } = useAuth();
- *
- *   if (!user) {
- *     return <button onClick={() => signIn(email, pass)}>Login</button>;
- *   }
- *
- *   return <button onClick={signOut}>Logout</button>;
- * }
- * ```
- */
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
 

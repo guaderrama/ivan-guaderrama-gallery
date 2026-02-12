@@ -1,5 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { ShippingSettings } from '../types';
+import { useAuth } from '@/features/auth/context/AuthContext';
+
+const UserManagementPanel = lazy(() => import('@/features/user-management/components/UserManagementPanel'));
+
+type SettingsTab = 'shipping' | 'users';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -10,10 +15,18 @@ interface SettingsModalProps {
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onSave, currentSettings }) => {
   const [settings, setSettings] = useState<ShippingSettings>(currentSettings);
+  const [activeTab, setActiveTab] = useState<SettingsTab>('shipping');
+  const { hasPermission } = useAuth();
+  const canManageUsers = hasPermission('users:manage');
 
   useEffect(() => {
     setSettings(currentSettings);
   }, [currentSettings, isOpen]);
+
+  // Reset to shipping tab when modal opens
+  useEffect(() => {
+    if (isOpen) setActiveTab('shipping');
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -29,7 +42,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onSave, 
     onSave(settings);
     onClose();
   };
-  
+
   const handleModalContentClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
@@ -60,7 +73,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onSave, 
       aria-labelledby="settings-title"
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-out scale-95 opacity-0 animate-fade-in-scale"
+        className={`bg-white rounded-2xl shadow-2xl w-full ${activeTab === 'users' ? 'max-w-4xl' : 'max-w-2xl'} max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-out scale-95 opacity-0 animate-fade-in-scale`}
         onClick={handleModalContentClick}
       >
         <div className="p-8 relative">
@@ -73,44 +86,88 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onSave, 
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-          
-          <h2 id="settings-title" className="text-3xl font-bold font-serif text-gray-900 mb-6">Ajustes de Envío</h2>
 
-          <div className="space-y-6">
-            <fieldset className="border p-4 rounded-lg">
-                <legend className="text-lg font-semibold text-gray-800 px-2">Parámetros EE.UU.</legend>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                    <InputField label="Costo de Guía (USD)" name="costoGuiaUSA" value={settings.costoGuiaUSA} />
-                    <InputField label="Costo por Kg Volumétrico (USD)" name="costoPorKiloUSA" value={settings.costoPorKiloUSA} />
-                </div>
-            </fieldset>
+          <h2 id="settings-title" className="text-3xl font-bold font-serif text-gray-900 mb-6">Ajustes</h2>
 
-            <fieldset className="border p-4 rounded-lg">
-                <legend className="text-lg font-semibold text-gray-800 px-2">Parámetros Canadá</legend>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                    <InputField label="Costo de Guía (CAD)" name="costoGuiaCanada" value={settings.costoGuiaCanada} />
-                    <InputField label="Costo por Kg Volumétrico (CAD)" name="costoPorKiloCanada" value={settings.costoPorKiloCanada} />
-                </div>
-            </fieldset>
+          {/* Internal tabs */}
+          {canManageUsers && (
+            <nav className="flex space-x-1 mb-6 border-b border-gray-200">
+              <button
+                onClick={() => setActiveTab('shipping')}
+                className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+                  activeTab === 'shipping' ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Envío
+                {activeTab === 'shipping' && (
+                  <span className="absolute inset-x-0 bottom-0 h-0.5 bg-blue-600 rounded-full"></span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('users')}
+                className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+                  activeTab === 'users' ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Usuarios
+                {activeTab === 'users' && (
+                  <span className="absolute inset-x-0 bottom-0 h-0.5 bg-blue-600 rounded-full"></span>
+                )}
+              </button>
+            </nav>
+          )}
 
-            <fieldset className="border p-4 rounded-lg">
-                <legend className="text-lg font-semibold text-gray-800 px-2">Factores Generales de Cálculo</legend>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
-                    <InputField label="Tasa de Seguro (ej: 0.0125)" name="tasaSeguro" value={settings.tasaSeguro} />
-                    <InputField label="Divisor de IVA (ej: 1.16)" name="divisorIVA" value={settings.divisorIVA} />
-                    <InputField label="Divisor Volumétrico" name="divisorVolumetrico" value={settings.divisorVolumetrico} />
-                </div>
-            </fieldset>
-          </div>
-          
-          <div className="mt-8 flex justify-end">
-            <button
-              onClick={handleSave}
-              className="px-6 py-3 border border-transparent text-base font-bold rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Guardar Ajustes
-            </button>
-          </div>
+          {/* Shipping Settings Tab */}
+          {activeTab === 'shipping' && (
+            <>
+              <div className="space-y-6">
+                <fieldset className="border p-4 rounded-lg">
+                    <legend className="text-lg font-semibold text-gray-800 px-2">Parámetros EE.UU.</legend>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                        <InputField label="Costo de Guía (USD)" name="costoGuiaUSA" value={settings.costoGuiaUSA} />
+                        <InputField label="Costo por Kg Volumétrico (USD)" name="costoPorKiloUSA" value={settings.costoPorKiloUSA} />
+                    </div>
+                </fieldset>
+
+                <fieldset className="border p-4 rounded-lg">
+                    <legend className="text-lg font-semibold text-gray-800 px-2">Parámetros Canadá</legend>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                        <InputField label="Costo de Guía (CAD)" name="costoGuiaCanada" value={settings.costoGuiaCanada} />
+                        <InputField label="Costo por Kg Volumétrico (CAD)" name="costoPorKiloCanada" value={settings.costoPorKiloCanada} />
+                    </div>
+                </fieldset>
+
+                <fieldset className="border p-4 rounded-lg">
+                    <legend className="text-lg font-semibold text-gray-800 px-2">Factores Generales de Cálculo</legend>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
+                        <InputField label="Tasa de Seguro (ej: 0.0125)" name="tasaSeguro" value={settings.tasaSeguro} />
+                        <InputField label="Divisor de IVA (ej: 1.16)" name="divisorIVA" value={settings.divisorIVA} />
+                        <InputField label="Divisor Volumétrico" name="divisorVolumetrico" value={settings.divisorVolumetrico} />
+                    </div>
+                </fieldset>
+              </div>
+
+              <div className="mt-8 flex justify-end">
+                <button
+                  onClick={handleSave}
+                  className="px-6 py-3 border border-transparent text-base font-bold rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Guardar Ajustes
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Users Management Tab */}
+          {activeTab === 'users' && (
+            <Suspense fallback={
+              <div className="flex items-center justify-center p-12">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              </div>
+            }>
+              <UserManagementPanel />
+            </Suspense>
+          )}
         </div>
       </div>
       <style>{`

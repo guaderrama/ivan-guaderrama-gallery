@@ -1,7 +1,8 @@
 
-import React, { useState, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import type { Product, NewProduct, ProductCategory, ShippingSettings } from '@/features/artwork-management/types';
 import type { NumberedProduct, Edition, NewNumberedProductData } from '@/features/numbered-editions/types';
+import type { Permission } from '@/features/auth/types';
 import { CATEGORIES } from '@/features/artwork-management/types';
 import { ProductCard, ProductDetailModal, ProductFormModal } from '@/features/artwork-management/components';
 import { SettingsModal, BulkUploadModal, SearchIcon, SettingsIcon, PlusIcon, UploadIcon, ArchiveBoxIcon, XIcon } from '@/shared/components';
@@ -14,10 +15,8 @@ import { useArtworks } from '@/features/artwork-management/hooks/useArtworks';
 import { useNumberedEditions } from '@/features/numbered-editions/hooks/useNumberedEditions';
 import CoursesManager from '@/features/courses/components/CoursesManager';
 import { RelationshipsManager } from '@/features/relationships/components';
-import type { InterestedArtwork } from '@/features/relationships/types';
 
-
-// 🔧 LAZY LOAD problematic components (AI features with external deps)
+// Lazy load heavy components
 const ArtworkSimulator = lazy(() => import('@/features/artwork-simulator/components/ArtworkSimulator'));
 
 // Default shipping settings (defined here to avoid import issues)
@@ -33,9 +32,23 @@ const initialShippingSettings: ShippingSettings = {
 
 type ActiveTab = 'catalog' | 'seriadas' | 'simulator' | 'courses' | 'relationships';
 
+// Tab definition with permission requirement
+interface TabDef {
+  name: ActiveTab;
+  label: string;
+  permission: Permission;
+}
+
+const ALL_TABS: TabDef[] = [
+  { name: 'catalog', label: 'Catálogo General', permission: 'catalog:read' },
+  { name: 'seriadas', label: 'Ediciones Numeradas', permission: 'editions:read' },
+  { name: 'simulator', label: 'Simulador', permission: 'simulator:access' },
+  { name: 'courses', label: 'Cursos', permission: 'courses:read' },
+  { name: 'relationships', label: 'Relaciones', permission: 'crm:read' },
+];
+
 // TabButton component for consistent tab styling
 interface TabButtonProps {
-  tabName: ActiveTab;
   label: string;
   isActive: boolean;
   onClick: () => void;
@@ -59,7 +72,7 @@ const TabButton: React.FC<TabButtonProps> = ({ label, isActive, onClick }) => (
 
 const App: React.FC = () => {
   // ALL HOOKS MUST BE AT THE TOP (React Rules of Hooks)
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, hasPermission, roles } = useAuth();
 
   // UI State (must be before Firestore hooks that depend on them)
   const [showArchived, setShowArchived] = useState(false);
@@ -71,8 +84,23 @@ const App: React.FC = () => {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [shippingSettings, setShippingSettings] = useState<ShippingSettings>(initialShippingSettings);
 
-  const [activeTab, setActiveTab] = useState<ActiveTab>('catalog');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('simulator');
   const [isAddNumberedProductModalOpen, setIsAddNumberedProductModalOpen] = useState(false);
+
+  // Compute visible tabs based on permissions
+  const visibleTabs = useMemo(() => {
+    return ALL_TABS.filter(tab => hasPermission(tab.permission));
+  }, [roles]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-select first visible tab if current is not accessible
+  useEffect(() => {
+    if (visibleTabs.length > 0 && !visibleTabs.some(t => t.name === activeTab)) {
+      setActiveTab(visibleTabs[0].name);
+    }
+  }, [visibleTabs, activeTab]);
+
+  const canWriteCatalog = hasPermission('catalog:write');
+  const canWriteEditions = hasPermission('editions:write');
   const [editingSeriesProduct, setEditingSeriesProduct] = useState<NumberedProduct | null>(null);
 
   // Firestore hooks (use state from above)
@@ -328,6 +356,26 @@ const App: React.FC = () => {
     );
   }
 
+  // Authenticated but no roles assigned
+  if (roles.length === 0) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-8">
+            <h2 className="text-xl font-bold text-yellow-900 mb-3">Sin acceso</h2>
+            <p className="text-yellow-800 mb-2">
+              Tu cuenta aún no tiene un rol asignado.
+            </p>
+            <p className="text-yellow-700 text-sm mb-6">
+              Contacta al administrador para que te asigne un rol y puedas acceder al sistema.
+            </p>
+            <LogoutButton />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Show error if Firestore connection fails
   if (artworksError || editionsError) {
     return (
@@ -377,38 +425,16 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Tabs - Using reusable TabButton component */}
-      <nav className="flex space-x-2 mb-8 border-b border-gray-200" aria-label="Tabs">
-        <TabButton
-          tabName="catalog"
-          label="Catálogo General"
-          isActive={activeTab === 'catalog'}
-          onClick={() => setActiveTab('catalog')}
-        />
-        <TabButton
-          tabName="seriadas"
-          label="Ediciones Numeradas"
-          isActive={activeTab === 'seriadas'}
-          onClick={() => setActiveTab('seriadas')}
-        />
-        <TabButton
-          tabName="simulator"
-          label="Simulador"
-          isActive={activeTab === 'simulator'}
-          onClick={() => setActiveTab('simulator')}
-        />
-        <TabButton
-          tabName="courses"
-          label="Cursos"
-          isActive={activeTab === 'courses'}
-          onClick={() => setActiveTab('courses')}
-        />
-        <TabButton
-          tabName="relationships"
-          label="Relaciones"
-          isActive={activeTab === 'relationships'}
-          onClick={() => setActiveTab('relationships')}
-        />
+      {/* Tabs - Permission-based */}
+      <nav className="flex space-x-2 mb-8 border-b border-gray-200 overflow-x-auto" aria-label="Tabs">
+        {visibleTabs.map(tab => (
+          <TabButton
+            key={tab.name}
+            label={tab.label}
+            isActive={activeTab === tab.name}
+            onClick={() => setActiveTab(tab.name)}
+          />
+        ))}
       </nav>
 
       {/* Catalog Tab */}
@@ -451,21 +477,25 @@ const App: React.FC = () => {
               </span>
             </button>
 
-            <button
-              onClick={() => setIsBulkUploadModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-            >
-              <UploadIcon className="w-5 h-5" />
-              <span className="hidden sm:inline">Bulk Upload</span>
-            </button>
+            {canWriteCatalog && (
+              <button
+                onClick={() => setIsBulkUploadModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                <UploadIcon className="w-5 h-5" />
+                <span className="hidden sm:inline">Bulk Upload</span>
+              </button>
+            )}
 
-            <button
-              onClick={() => setIsFormModalOpen(true)}
-              className="flex items-center gap-2 px-6 py-2 bg-gray-900 text-white hover:bg-gray-800 rounded-lg transition-colors"
-            >
-              <PlusIcon className="w-5 h-5" />
-              <span className="hidden sm:inline">Agregar Obra</span>
-            </button>
+            {canWriteCatalog && (
+              <button
+                onClick={() => setIsFormModalOpen(true)}
+                className="flex items-center gap-2 px-6 py-2 bg-gray-900 text-white hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <PlusIcon className="w-5 h-5" />
+                <span className="hidden sm:inline">Agregar Obra</span>
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -475,6 +505,7 @@ const App: React.FC = () => {
                 product={product}
                 onEdit={(p) => setEditingProduct(p)}
                 onViewDetails={(p) => setViewingProduct(p)}
+                canEdit={canWriteCatalog}
               />
             ))}
           </div>

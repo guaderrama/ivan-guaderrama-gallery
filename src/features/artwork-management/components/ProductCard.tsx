@@ -8,9 +8,10 @@ interface ProductCardProps {
   product: Product;
   onEdit: (product: Product) => void;
   onViewDetails: (product: Product) => void;
+  canEdit?: boolean;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onViewDetails }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onViewDetails, canEdit = true }) => {
   return (
     <div className="group relative break-inside-avoid overflow-hidden rounded-lg shadow-sm hover:shadow-xl transition-shadow duration-300">
       {product.vendido && (
@@ -48,13 +49,15 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onViewDetail
             >
                 <ExpandIcon className="h-4 w-4" />
             </button>
-            <button
-                onClick={(e) => { e.stopPropagation(); onEdit(product); }}
-                className="p-2.5 rounded-full bg-blue-500 hover:bg-blue-600 text-white transition-all transform hover:scale-110"
-                aria-label={`Editar ${product.nombre}`}
-            >
-                <EditIcon className="h-4 w-4" />
-            </button>
+            {canEdit && (
+              <button
+                  onClick={(e) => { e.stopPropagation(); onEdit(product); }}
+                  className="p-2.5 rounded-full bg-blue-500 hover:bg-blue-600 text-white transition-all transform hover:scale-110"
+                  aria-label={`Editar ${product.nombre}`}
+              >
+                  <EditIcon className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </div>
       </div>

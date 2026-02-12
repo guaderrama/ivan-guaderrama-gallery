@@ -2,100 +2,133 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper functions
+
+    // ─── Token-based Role Helpers (supports roles[] array + legacy role string) ─────
     function isAuthenticated() {
       return request.auth != null;
     }
-    
-    function isAdmin() {
-      return isAuthenticated() && 
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-    
-    // Artworks collection (Catálogo General)
-    match /artworks/{artworkId} {
-      // Allow queries (list) but filter results
-      allow list: if true;
-      // Only return specific docs if active or admin
-      allow get: if resource.data.status == 'active' || isAdmin();
-      // Only admins can create/update/delete
-      allow create, update, delete: if isAdmin();
 
-      // Numbered editions subcollection (old structure, keeping for compatibility)
+    // Check if user has a specific role (new array format OR legacy string)
+    function hasRole(role) {
+      return isAuthenticated() && (
+        (request.auth.token.roles != null && role in request.auth.token.roles) ||
+        request.auth.token.role == role
+      );
+    }
+
+    function isSuperAdmin() {
+      return hasRole('superadmin');
+    }
+
+    function canReadCatalog() {
+      return hasRole('superadmin') || hasRole('editor_catalogo') || hasRole('visualizador');
+    }
+
+    function canWriteCatalog() {
+      return hasRole('superadmin') || hasRole('editor_catalogo');
+    }
+
+    function isCrmManager() {
+      return hasRole('superadmin') || hasRole('gestor_crm');
+    }
+
+    function isCourseManager() {
+      return hasRole('superadmin') || hasRole('gestor_cursos');
+    }
+
+    function hasAnyRole() {
+      return hasRole('superadmin') || hasRole('editor_catalogo') || hasRole('gestor_crm') || hasRole('gestor_cursos') || hasRole('visualizador');
+    }
+
+    // ─── Artworks collection (Catalogo General) ────────────
+    match /artworks/{artworkId} {
+      allow list: if true;
+      allow get: if resource.data.status == 'active' || canReadCatalog();
+      allow create, update, delete: if canWriteCatalog();
+
+      // Numbered editions subcollection (old structure, compatibility)
       match /pieces/{pieceId} {
         allow list: if true;
-        allow get: if resource.data.status == 'active' || isAdmin();
-        allow create, update, delete: if isAdmin();
+        allow get: if resource.data.status == 'active' || canReadCatalog();
+        allow create, update, delete: if canWriteCatalog();
       }
     }
 
-    // Numbered Editions collection (new structure with subcollections)
+    // ─── Numbered Editions collection ──────────────────────
     match /numbered-editions/{seriesId} {
-      // Allow queries (list) but filter results
       allow list: if true;
-      // Only return specific docs if active or admin
-      allow get: if resource.data.seriesStatus == 'active' || isAdmin();
-      // Only admins can create/update/delete series
-      allow create, update, delete: if isAdmin();
+      allow get: if resource.data.seriesStatus == 'active' || canReadCatalog();
+      allow create, update, delete: if canWriteCatalog();
 
-      // Editions subcollection
       match /editions/{editionId} {
-        // Allow queries (list) but filter results
         allow list: if true;
-        allow get: if resource.data.status == 'active' || isAdmin();
-        allow create, update, delete: if isAdmin();
+        allow get: if resource.data.status == 'active' || canReadCatalog();
+        allow create, update, delete: if canWriteCatalog();
       }
     }
 
-    // Mini Works collection
+    // ─── Mini Works collection ─────────────────────────────
     match /mini-works/{workId} {
-      // Allow queries (list) but filter results
       allow list: if true;
-      // Only return specific docs if active or admin
-      allow get: if resource.data.status == 'active' || isAdmin();
-      // Only admins can create/update/delete
-      allow create, update, delete: if isAdmin();
+      allow get: if resource.data.status == 'active' || canReadCatalog();
+      allow create, update, delete: if canWriteCatalog();
     }
 
-    // Generated names collection (AI suggestions)
+    // ─── Generated Names (AI suggestions) ──────────────────
     match /generatedNames/{nameId} {
-      allow read: if isAdmin();
-      allow create: if isAdmin();
-      allow update, delete: if false; // Immutable once created
+      allow read: if canWriteCatalog();
+      allow create: if canWriteCatalog();
+      allow update, delete: if false;
     }
 
-    // PDF Courses collection
+    // ─── PDF Courses collection ────────────────────────────
     match /pdf-courses/{courseId} {
-      // Allow read for authenticated users
-      allow read: if isAuthenticated();
-      // Only admins can create/update/delete
-      allow create, update, delete: if isAdmin();
+      allow read: if hasAnyRole();
+      allow create, update, delete: if isCourseManager();
     }
 
-    // Relationships collection (CRM)
+    // ─── Relationships collection (CRM) ────────────────────
     match /relationships/{relationshipId} {
-      // Allow read for authenticated users
-      allow read: if isAuthenticated();
-      // Only admins can create/update/delete
-      allow create, update, delete: if isAdmin();
+      allow read: if isCrmManager();
+      allow create, update, delete: if isCrmManager();
     }
 
-    // Users collection
+    // ─── Users collection ──────────────────────────────────
     match /users/{userId} {
       // Users can read their own data
       allow read: if isAuthenticated() && request.auth.uid == userId;
-      
-      // Only admins can read all users
-      allow read: if isAdmin();
-      
-      // Users can update their own profile (except role)
-      allow update: if isAuthenticated() && 
+
+      // Superadmin can read all users
+      allow read: if isSuperAdmin();
+
+      // Users can create their own doc (sign-up), but cannot set roles
+      allow create: if isAuthenticated() &&
                        request.auth.uid == userId &&
-                       request.resource.data.role == resource.data.role;
-      
-      // Only admins can create users or change roles
-      allow create, delete: if isAdmin();
+                       !('role' in request.resource.data) &&
+                       !('roles' in request.resource.data);
+
+      // Users can update their own profile (except role/roles)
+      allow update: if isAuthenticated() &&
+                       request.auth.uid == userId &&
+                       (!('role' in request.resource.data) || request.resource.data.role == resource.data.role) &&
+                       (!('roles' in request.resource.data) || request.resource.data.roles == resource.data.roles);
+
+      // Superadmin can create/delete any user doc
+      allow create, delete: if isSuperAdmin();
+    }
+
+    // ─── Audit Log ─────────────────────────────────────────
+    match /audit-log/{logId} {
+      // Only superadmin can read audit logs
+      allow read: if isSuperAdmin();
+      // Only Cloud Functions write (no client writes)
+      allow write: if false;
+    }
+
+    // ─── Shipping Settings ─────────────────────────────────
+    match /settings/{settingId} {
+      allow read: if hasAnyRole();
+      allow write: if isSuperAdmin();
     }
   }
 }
