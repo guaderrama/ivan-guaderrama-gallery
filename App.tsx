@@ -2,26 +2,22 @@
 import React, { useState, useMemo, lazy, Suspense } from 'react';
 import type { Product, NewProduct, ProductCategory, ShippingSettings } from '@/features/artwork-management/types';
 import type { NumberedProduct, Edition, NewNumberedProductData } from '@/features/numbered-editions/types';
-import type { MiniWork, NewMiniWork } from '@/features/mini-works/types';
 import { CATEGORIES } from '@/features/artwork-management/types';
 import { ProductCard, ProductDetailModal, ProductFormModal } from '@/features/artwork-management/components';
 import { SettingsModal, BulkUploadModal, SearchIcon, SettingsIcon, PlusIcon, UploadIcon, ArchiveBoxIcon, XIcon } from '@/shared/components';
 import { NumberedEditionsManager, AddNumberedProductModal, EditSeriesModal } from '@/features/numbered-editions/components';
-import { MiniWorksManager, AddMiniWorkModal } from '@/features/mini-works/components';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { LoginForm } from '@/features/auth/components/LoginForm';
 import { LogoutButton } from '@/features/auth/components/LogoutButton';
 import { UserBadge } from '@/features/auth/components/UserBadge';
 import { useArtworks } from '@/features/artwork-management/hooks/useArtworks';
 import { useNumberedEditions } from '@/features/numbered-editions/hooks/useNumberedEditions';
-import { useMiniWorks } from '@/features/mini-works/hooks/useMiniWorks';
 import CoursesManager from '@/features/courses/components/CoursesManager';
 import { RelationshipsManager } from '@/features/relationships/components';
 import type { InterestedArtwork } from '@/features/relationships/types';
 
 
 // 🔧 LAZY LOAD problematic components (AI features with external deps)
-const GenerateNameModal = lazy(() => import('@/features/ai-naming/components/GenerateNameModal'));
 const ArtworkSimulator = lazy(() => import('@/features/artwork-simulator/components/ArtworkSimulator'));
 
 // Default shipping settings (defined here to avoid import issues)
@@ -35,7 +31,7 @@ const initialShippingSettings: ShippingSettings = {
   divisorVolumetrico: 5000,
 };
 
-type ActiveTab = 'catalog' | 'seriadas' | 'miniWorks' | 'simulator' | 'courses' | 'relationships';
+type ActiveTab = 'catalog' | 'seriadas' | 'simulator' | 'courses' | 'relationships';
 
 // TabButton component for consistent tab styling
 interface TabButtonProps {
@@ -67,7 +63,6 @@ const App: React.FC = () => {
 
   // UI State (must be before Firestore hooks that depend on them)
   const [showArchived, setShowArchived] = useState(false);
-  const [showArchivedMiniWorks, setShowArchivedMiniWorks] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
@@ -79,9 +74,6 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('catalog');
   const [isAddNumberedProductModalOpen, setIsAddNumberedProductModalOpen] = useState(false);
   const [editingSeriesProduct, setEditingSeriesProduct] = useState<NumberedProduct | null>(null);
-  const [isAddMiniWorkModalOpen, setIsAddMiniWorkModalOpen] = useState(false);
-  const [isGenerateNameModalOpen, setIsGenerateNameModalOpen] = useState(false);
-  const [editingMiniWork, setEditingMiniWork] = useState<MiniWork | null>(null);
 
   // Firestore hooks (use state from above)
   const {
@@ -109,15 +101,6 @@ const App: React.FC = () => {
     syncEditions,
   } = useNumberedEditions();
 
-  const {
-    miniWorks,
-    loading: miniWorksLoading,
-    error: miniWorksError,
-    createMiniWork,
-    updateMiniWork,
-    deleteMiniWork,
-    archiveMiniWork,
-  } = useMiniWorks({ status: showArchivedMiniWorks ? 'all' : 'active' });
 
   // State for Bulk Upload
   const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = useState(false);
@@ -126,17 +109,15 @@ const App: React.FC = () => {
     return [
       ...catalog.map(p => p.nombre?.toLowerCase() || '').filter(n => n),
       ...numberedProducts.flatMap(np => np.editions?.map(e => e.name?.toLowerCase() || '').filter(n => n) || []),
-      ...miniWorks.map(mw => mw.name?.toLowerCase() || '').filter(n => n)
     ];
-  }, [catalog, numberedProducts, miniWorks]);
+  }, [catalog, numberedProducts]);
 
   const allExistingSkus = useMemo(() => {
     return [
       ...catalog.map(p => p.sku?.toUpperCase() || '').filter(s => s),
       ...numberedProducts.flatMap(np => np.editions?.map(e => e.sku?.toUpperCase() || '').filter(s => s) || []),
-      ...miniWorks.map(mw => mw.sku?.toUpperCase() || '').filter(s => s)
     ];
-  }, [catalog, numberedProducts, miniWorks]);
+  }, [catalog, numberedProducts]);
 
   // Computed values
   const filteredCatalog = useMemo(() => {
@@ -165,11 +146,6 @@ const App: React.FC = () => {
     return filtered;
   }, [catalog, searchTerm, selectedCategory, showArchived]);
 
-  const filteredMiniWorks = useMemo(() => {
-    return miniWorks.filter(work =>
-      (!showArchivedMiniWorks ? work.status !== 'archived' : true)
-    );
-  }, [miniWorks, showArchivedMiniWorks]);
 
   // ============= Event Handlers =============
 
@@ -311,44 +287,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Mini Works handlers
-  const handleAddMiniWork = async (newWork: NewMiniWork) => {
-    try {
-      await createMiniWork(newWork);
-      setIsAddMiniWorkModalOpen(false);
-    } catch (error) {
-      console.error('Error adding mini work:', error);
-      alert('Error al agregar la mini obra. Por favor intenta de nuevo.');
-    }
-  };
-
-  const handleEditMiniWork = async (updatedWork: MiniWork) => {
-    try {
-      await updateMiniWork(updatedWork.id, updatedWork);
-      setEditingMiniWork(null);
-    } catch (error) {
-      console.error('Error updating mini work:', error);
-      alert('Error al actualizar la mini obra. Por favor intenta de nuevo.');
-    }
-  };
-
-  const handleDeleteMiniWork = async (id: string) => {
-    try {
-      await deleteMiniWork(id);
-    } catch (error) {
-      console.error('Error deleting mini work:', error);
-      alert('Error al eliminar la mini obra. Por favor intenta de nuevo.');
-    }
-  };
-
-  const handleArchiveMiniWork = async (id: string) => {
-    try {
-      await archiveMiniWork(id);
-    } catch (error) {
-      console.error('Error archiving mini work:', error);
-      alert('Error al archivar la mini obra. Por favor intenta de nuevo.');
-    }
-  };
 
   const handleBulkUpload = async (products: NewProduct[]) => {
     try {
@@ -363,7 +301,7 @@ const App: React.FC = () => {
 
   // ============= Early Returns (After ALL hooks) =============
 
-  if (authLoading || artworksLoading || editionsLoading || miniWorksLoading) {
+  if (authLoading || artworksLoading || editionsLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
@@ -391,7 +329,7 @@ const App: React.FC = () => {
   }
 
   // Show error if Firestore connection fails
-  if (artworksError || editionsError || miniWorksError) {
+  if (artworksError || editionsError) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <div className="max-w-md w-full text-center">
@@ -402,7 +340,6 @@ const App: React.FC = () => {
             </p>
             {artworksError && <p className="text-sm text-red-600 mb-2">Catálogo: {artworksError}</p>}
             {editionsError && <p className="text-sm text-red-600 mb-2">Ediciones: {editionsError}</p>}
-            {miniWorksError && <p className="text-sm text-red-600 mb-2">Mini Obras: {miniWorksError}</p>}
             <button
               onClick={() => window.location.reload()}
               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors mt-4"
@@ -453,12 +390,6 @@ const App: React.FC = () => {
           label="Ediciones Numeradas"
           isActive={activeTab === 'seriadas'}
           onClick={() => setActiveTab('seriadas')}
-        />
-        <TabButton
-          tabName="miniWorks"
-          label="Mini Obras"
-          isActive={activeTab === 'miniWorks'}
-          onClick={() => setActiveTab('miniWorks')}
         />
         <TabButton
           tabName="simulator"
@@ -569,16 +500,6 @@ const App: React.FC = () => {
         />
       )}
 
-      {/* Mini Works Tab */}
-      {activeTab === 'miniWorks' && (
-        <MiniWorksManager
-          works={filteredMiniWorks}
-          isArchivedView={showArchivedMiniWorks}
-          onOpenGenerateNameModal={() => setIsGenerateNameModalOpen(true)}
-          onEdit={setEditingMiniWork}
-          onArchive={handleArchiveMiniWork}
-        />
-      )}
       
       {/* Courses Tab */}
       {activeTab === 'courses' && <CoursesManager />}
@@ -666,41 +587,7 @@ const App: React.FC = () => {
         />
       )}
 
-      <AddMiniWorkModal
-        isOpen={isAddMiniWorkModalOpen}
-        onClose={() => setIsAddMiniWorkModalOpen(false)}
-        onSave={handleAddMiniWork}
-        existingSkus={allExistingSkus}
-      />
 
-      {editingMiniWork && (
-        <AddMiniWorkModal
-          isOpen={true}
-          onClose={() => setEditingMiniWork(null)}
-          onSave={handleEditMiniWork}
-          work={editingMiniWork}
-          existingSkus={allExistingSkus}
-        />
-      )}
-
-      {/* GenerateNameModal - LAZY LOADED */}
-      {isGenerateNameModalOpen && (
-        <Suspense fallback={
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-8">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-            </div>
-          </div>
-        }>
-          <GenerateNameModal
-            isOpen={isGenerateNameModalOpen}
-            onClose={() => setIsGenerateNameModalOpen(false)}
-            onSave={handleAddMiniWork}
-            existingSkus={allExistingSkus}
-            existingNames={allExistingNames}
-          />
-        </Suspense>
-      )}
 
       <BulkUploadModal
         isOpen={isBulkUploadModalOpen}

@@ -1,18 +1,17 @@
 
 import React from 'react';
 import type { MiniWork } from '../types';
-import { SparklesIcon, ArchiveBoxIcon } from '@/shared/components/Icons';
+import { ArchiveBoxIcon } from '@/shared/components/Icons';
 
 interface MiniWorksManagerProps {
   works: MiniWork[];
-  onOpenGenerateNameModal: () => void;
   onEdit: (work: MiniWork) => void;
   onArchive: (workId: string) => void;
   isArchivedView: boolean;
 }
 
-const MiniWorksManager: React.FC<MiniWorksManagerProps> = ({ works, onOpenGenerateNameModal, onEdit, onArchive, isArchivedView }) => {
-  
+const MiniWorksManager: React.FC<MiniWorksManagerProps> = ({ works, onEdit, onArchive, isArchivedView }) => {
+
   return (
     <div className="p-1">
       <div className="mb-6">
@@ -20,18 +19,6 @@ const MiniWorksManager: React.FC<MiniWorksManagerProps> = ({ works, onOpenGenera
           {isArchivedView ? 'Archivo de Obras Mini' : 'Listado de Obras Mini'}
         </h2>
       </div>
-
-      {!isArchivedView && (
-        <div className="mb-8">
-           <button
-            onClick={onOpenGenerateNameModal}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-transparent text-sm font-bold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all shadow-sm hover:shadow-md"
-          >
-            <SparklesIcon className="h-5 w-5" />
-            Generar Nombre con IA
-          </button>
-        </div>
-      )}
 
       {works.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
