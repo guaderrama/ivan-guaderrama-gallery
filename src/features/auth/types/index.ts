@@ -48,7 +48,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
 
 // ─── Role Display Labels ────────────────────────────────
 export const ROLE_LABELS: Record<AppRole, string> = {
-  superadmin: 'Super Admin',
+  superadmin: 'Administrador',
   editor_catalogo: 'Editor de Catálogo',
   editor_seriadas: 'Editor de Seriadas',
   gestor_crm: 'Gestor CRM',
