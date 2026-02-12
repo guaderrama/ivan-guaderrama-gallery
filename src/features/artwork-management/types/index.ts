@@ -28,6 +28,8 @@ export interface Product {
   costoEnvioCanada: number;
   category: ProductCategory;
   vendido?: boolean;
+  galeria?: boolean;
+  bodega?: boolean;
   // Firebase fields
   status?: ArtworkStatus;
   createdAt?: Date | { seconds: number; nanoseconds: number };

@@ -249,7 +249,7 @@ const ProductForm: React.FC<ProductFormProps> = (
           {shippingError && <p className="text-xs text-orange-500 px-1">{shippingError}</p>}
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-6 flex-wrap">
           <div className="flex items-center">
             <input id="interactiva" name="interactiva" type="checkbox" checked={productData.interactiva} onChange={handleCheckboxChange} className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded bg-gray-50" />
             <label htmlFor="interactiva" className="ml-2 block text-sm font-bold text-gray-700">
@@ -260,6 +260,18 @@ const ProductForm: React.FC<ProductFormProps> = (
             <input id="vendido" name="vendido" type="checkbox" checked={productData.vendido} onChange={handleCheckboxChange} className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded bg-gray-50" />
             <label htmlFor="vendido" className="ml-2 block text-sm font-bold text-gray-700">
                 Marcar como Vendido
+            </label>
+          </div>
+          <div className="flex items-center">
+            <input id="galeria" name="galeria" type="checkbox" checked={!!productData.galeria} onChange={handleCheckboxChange} className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded bg-gray-50" />
+            <label htmlFor="galeria" className="ml-2 block text-sm font-bold text-gray-700">
+                Galeria
+            </label>
+          </div>
+          <div className="flex items-center">
+            <input id="bodega" name="bodega" type="checkbox" checked={!!productData.bodega} onChange={handleCheckboxChange} className="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded bg-gray-50" />
+            <label htmlFor="bodega" className="ml-2 block text-sm font-bold text-gray-700">
+                Bodega
             </label>
           </div>
         </div>
