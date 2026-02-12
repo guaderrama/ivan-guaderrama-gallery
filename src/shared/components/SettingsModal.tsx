@@ -1,10 +1,12 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { ShippingSettings } from '../types';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
+import { auth } from '@/shared/lib/firebase';
 
 const UserManagementPanel = lazy(() => import('@/features/user-management/components/UserManagementPanel'));
 
-type SettingsTab = 'shipping' | 'users';
+type SettingsTab = 'shipping' | 'users' | 'password';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -15,18 +17,35 @@ interface SettingsModalProps {
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onSave, currentSettings }) => {
   const [settings, setSettings] = useState<ShippingSettings>(currentSettings);
-  const [activeTab, setActiveTab] = useState<SettingsTab>('shipping');
   const { hasPermission } = useAuth();
-  const canManageUsers = hasPermission('users:manage');
+  const isSuperAdmin = hasPermission('users:manage');
+
+  const defaultTab: SettingsTab = isSuperAdmin ? 'shipping' : 'password';
+  const [activeTab, setActiveTab] = useState<SettingsTab>(defaultTab);
+
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
 
   useEffect(() => {
     setSettings(currentSettings);
   }, [currentSettings, isOpen]);
 
-  // Reset to shipping tab when modal opens
+  // Reset state when modal opens
   useEffect(() => {
-    if (isOpen) setActiveTab('shipping');
-  }, [isOpen]);
+    if (isOpen) {
+      setActiveTab(isSuperAdmin ? 'shipping' : 'password');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setPasswordError(null);
+      setPasswordSuccess(false);
+    }
+  }, [isOpen, isSuperAdmin]);
 
   if (!isOpen) return null;
 
@@ -47,6 +66,49 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onSave, 
     e.stopPropagation();
   };
 
+  const handlePasswordChange = async () => {
+    setPasswordError(null);
+    setPasswordSuccess(false);
+
+    if (!currentPassword) {
+      setPasswordError('Ingresa tu contraseña actual.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPasswordError('La nueva contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Las contraseñas no coinciden.');
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      const user = auth.currentUser;
+      if (!user || !user.email) throw new Error('No hay sesión activa.');
+
+      const credential = EmailAuthProvider.credential(user.email, currentPassword);
+      await reauthenticateWithCredential(user, credential);
+      await updatePassword(user, newPassword);
+
+      setPasswordSuccess(true);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        setPasswordError('La contraseña actual es incorrecta.');
+      } else if (err.code === 'auth/weak-password') {
+        setPasswordError('La contraseña es muy débil. Usa al menos 6 caracteres.');
+      } else {
+        setPasswordError(err.message || 'Error al cambiar la contraseña.');
+      }
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
   const InputField = ({ label, name, value }: { label: string, name: keyof ShippingSettings, value: number }) => (
     <div className="sm:col-span-1">
       <label htmlFor={name} className="block text-sm font-semibold text-gray-700">
@@ -63,6 +125,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onSave, 
       />
     </div>
   );
+
+  const showTabs = isSuperAdmin;
 
   return (
     <div
@@ -89,36 +153,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onSave, 
 
           <h2 id="settings-title" className="text-3xl font-bold font-serif text-gray-900 mb-6">Ajustes</h2>
 
-          {/* Internal tabs */}
-          {canManageUsers && (
+          {/* Internal tabs - only for superadmin */}
+          {showTabs && (
             <nav className="flex space-x-1 mb-6 border-b border-gray-200">
-              <button
-                onClick={() => setActiveTab('shipping')}
-                className={`px-4 py-2 text-sm font-medium transition-colors relative ${
-                  activeTab === 'shipping' ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Envío
-                {activeTab === 'shipping' && (
-                  <span className="absolute inset-x-0 bottom-0 h-0.5 bg-blue-600 rounded-full"></span>
-                )}
-              </button>
-              <button
-                onClick={() => setActiveTab('users')}
-                className={`px-4 py-2 text-sm font-medium transition-colors relative ${
-                  activeTab === 'users' ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Usuarios
-                {activeTab === 'users' && (
-                  <span className="absolute inset-x-0 bottom-0 h-0.5 bg-blue-600 rounded-full"></span>
-                )}
-              </button>
+              <TabBtn label="Envío" tab="shipping" activeTab={activeTab} onClick={setActiveTab} />
+              <TabBtn label="Usuarios" tab="users" activeTab={activeTab} onClick={setActiveTab} />
+              <TabBtn label="Contraseña" tab="password" activeTab={activeTab} onClick={setActiveTab} />
             </nav>
           )}
 
           {/* Shipping Settings Tab */}
-          {activeTab === 'shipping' && (
+          {activeTab === 'shipping' && isSuperAdmin && (
             <>
               <div className="space-y-6">
                 <fieldset className="border p-4 rounded-lg">
@@ -159,7 +204,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onSave, 
           )}
 
           {/* Users Management Tab */}
-          {activeTab === 'users' && (
+          {activeTab === 'users' && isSuperAdmin && (
             <Suspense fallback={
               <div className="flex items-center justify-center p-12">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
@@ -167,6 +212,81 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onSave, 
             }>
               <UserManagementPanel />
             </Suspense>
+          )}
+
+          {/* Password Change Tab */}
+          {activeTab === 'password' && (
+            <div className="max-w-md mx-auto">
+              {!showTabs && (
+                <p className="text-sm text-gray-500 mb-6">Cambia tu contraseña de acceso al sistema.</p>
+              )}
+
+              {passwordSuccess && (
+                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 text-sm">
+                  Contraseña actualizada correctamente.
+                </div>
+              )}
+
+              {passwordError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
+                  {passwordError}
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="currentPassword" className="block text-sm font-semibold text-gray-700">
+                    Contraseña actual
+                  </label>
+                  <input
+                    type="password"
+                    id="currentPassword"
+                    value={currentPassword}
+                    onChange={e => setCurrentPassword(e.target.value)}
+                    className="mt-1 form-input"
+                    placeholder="Ingresa tu contraseña actual"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="newPassword" className="block text-sm font-semibold text-gray-700">
+                    Nueva contraseña
+                  </label>
+                  <input
+                    type="password"
+                    id="newPassword"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    className="mt-1 form-input"
+                    placeholder="Mínimo 6 caracteres"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700">
+                    Confirmar nueva contraseña
+                  </label>
+                  <input
+                    type="password"
+                    id="confirmPassword"
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    className="mt-1 form-input"
+                    placeholder="Repite la nueva contraseña"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={handlePasswordChange}
+                  disabled={passwordLoading}
+                  className="px-6 py-3 border border-transparent text-base font-bold rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                >
+                  {passwordLoading ? 'Cambiando...' : 'Cambiar Contraseña'}
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -180,5 +300,22 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onSave, 
     </div>
   );
 };
+
+// Small tab button helper
+function TabBtn({ label, tab, activeTab, onClick }: { label: string; tab: SettingsTab; activeTab: SettingsTab; onClick: (t: SettingsTab) => void }) {
+  return (
+    <button
+      onClick={() => onClick(tab)}
+      className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+        activeTab === tab ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700'
+      }`}
+    >
+      {label}
+      {activeTab === tab && (
+        <span className="absolute inset-x-0 bottom-0 h-0.5 bg-blue-600 rounded-full"></span>
+      )}
+    </button>
+  );
+}
 
 export default SettingsModal;
