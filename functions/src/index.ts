@@ -8,6 +8,7 @@
  * 4. setUserRoles - Assign roles to users (superadmin only)
  * 5. listUsers - List all users (superadmin only)
  * 6. migrateExistingRoles - One-time migration from admin→superadmin
+ * 7. changeUserPassword - Change a user's password (superadmin only)
  */
 
 import * as functions from 'firebase-functions';
@@ -253,6 +254,45 @@ export const migrateExistingRoles = functions.https.onCall(async (_data, context
   } catch (error: any) {
     console.error('Migration failed:', error);
     throw new functions.https.HttpsError('internal', `Migration failed: ${error.message}`);
+  }
+});
+
+// ─── FUNCTION 7: Change User Password ───────────────────
+
+export const changeUserPassword = functions.https.onCall(async (data, context) => {
+  const callerId = requireAuth(context);
+
+  const callerIsSuperAdmin = await checkSuperAdmin(callerId);
+  if (!callerIsSuperAdmin) {
+    throw new functions.https.HttpsError('permission-denied', 'Solo superadmin puede cambiar contraseñas');
+  }
+
+  const { targetUid, newPassword } = data;
+
+  if (!targetUid || typeof targetUid !== 'string') {
+    throw new functions.https.HttpsError('invalid-argument', 'targetUid es requerido');
+  }
+  if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 6) {
+    throw new functions.https.HttpsError('invalid-argument', 'La contraseña debe tener al menos 6 caracteres');
+  }
+
+  try {
+    await admin.auth().updateUser(targetUid, { password: newPassword });
+
+    // Audit log
+    await db.collection('audit-log').add({
+      action: 'password_change',
+      targetUid,
+      performedBy: callerId,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    console.log(`Password changed for ${targetUid} by ${callerId}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error changing password:', error);
+    if (error instanceof functions.https.HttpsError) throw error;
+    throw new functions.https.HttpsError('internal', `Error al cambiar contraseña: ${error.message}`);
   }
 });
 

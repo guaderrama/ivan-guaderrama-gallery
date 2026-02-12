@@ -426,13 +426,15 @@ const App: React.FC = () => {
         </div>
         <div className="flex items-center gap-3">
           <UserBadge />
-          <button
-            onClick={() => setIsSettingsModalOpen(true)}
-            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
-            aria-label="Settings"
-          >
-            <SettingsIcon className="w-5 h-5" />
-          </button>
+          {hasPermission('users:manage') && (
+            <button
+              onClick={() => setIsSettingsModalOpen(true)}
+              className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+              aria-label="Settings"
+            >
+              <SettingsIcon className="w-5 h-5" />
+            </button>
+          )}
           <LogoutButton />
         </div>
       </header>

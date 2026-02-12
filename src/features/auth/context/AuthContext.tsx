@@ -112,23 +112,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const firebaseErr = err as { code?: string; message?: string };
 
       switch (firebaseErr.code) {
-        case 'auth/user-not-found':
-          errorMessage = 'No user found with this email';
-          break;
+        case 'auth/invalid-credential':
         case 'auth/wrong-password':
-          errorMessage = 'Incorrect password';
+        case 'auth/user-not-found':
+          errorMessage = 'Email o contraseña incorrectos';
           break;
         case 'auth/invalid-email':
-          errorMessage = 'Invalid email address';
+          errorMessage = 'Dirección de email inválida';
           break;
         case 'auth/user-disabled':
-          errorMessage = 'This account has been disabled';
+          errorMessage = 'Esta cuenta ha sido deshabilitada';
           break;
         case 'auth/too-many-requests':
-          errorMessage = 'Too many failed attempts. Try again later';
+          errorMessage = 'Demasiados intentos fallidos. Intenta más tarde';
           break;
         default:
-          errorMessage = firebaseErr.message || 'Failed to sign in';
+          errorMessage = firebaseErr.message || 'Error al iniciar sesión';
       }
 
       setError(errorMessage);
@@ -157,21 +156,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(false);
       return true;
     } catch (err: unknown) {
-      let errorMessage = 'Failed to create account';
+      let errorMessage = 'Error al crear la cuenta';
       const firebaseErr = err as { code?: string; message?: string };
 
       switch (firebaseErr.code) {
         case 'auth/email-already-in-use':
-          errorMessage = 'Email already in use';
+          errorMessage = 'Este email ya está en uso';
           break;
         case 'auth/invalid-email':
-          errorMessage = 'Invalid email address';
+          errorMessage = 'Dirección de email inválida';
           break;
         case 'auth/weak-password':
-          errorMessage = 'Password should be at least 6 characters';
+          errorMessage = 'La contraseña debe tener al menos 6 caracteres';
           break;
         default:
-          errorMessage = firebaseErr.message || 'Failed to create account';
+          errorMessage = firebaseErr.message || 'Error al crear la cuenta';
       }
 
       setError(errorMessage);

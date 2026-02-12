@@ -62,5 +62,18 @@ export function useUserManagement() {
     }
   }, [functions]);
 
-  return { users, loading, error, fetchUsers, setUserRoles };
+  const changeUserPassword = useCallback(async (targetUid: string, newPassword: string) => {
+    setError(null);
+    try {
+      const changePasswordFn = httpsCallable<{ targetUid: string; newPassword: string }, { success: boolean }>(functions, 'changeUserPassword');
+      await changePasswordFn({ targetUid, newPassword });
+    } catch (err: any) {
+      const msg = err?.message || 'Error al cambiar contraseña';
+      setError(msg);
+      console.error('Error changing password:', err);
+      throw err;
+    }
+  }, [functions]);
+
+  return { users, loading, error, fetchUsers, setUserRoles, changeUserPassword };
 }

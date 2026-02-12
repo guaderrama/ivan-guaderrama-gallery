@@ -4,9 +4,17 @@ import { ROLES, ROLE_LABELS, ROLE_COLORS } from '@/features/auth/types';
 import type { AppRole } from '@/features/auth/types';
 
 const UserManagementPanel: React.FC = () => {
-  const { users, loading, error, fetchUsers, setUserRoles } = useUserManagement();
+  const { users, loading, error, fetchUsers, setUserRoles, changeUserPassword } = useUserManagement();
   const [changingUid, setChangingUid] = useState<string | null>(null);
   const [pendingRoles, setPendingRoles] = useState<Record<string, AppRole[]>>({});
+
+  // Password change state
+  const [passwordUid, setPasswordUid] = useState<string | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -65,6 +73,55 @@ const UserManagementPanel: React.FC = () => {
     });
   };
 
+  const handleOpenPasswordChange = (uid: string) => {
+    setPasswordUid(uid);
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordError(null);
+    setPasswordSuccess(null);
+  };
+
+  const handleCancelPasswordChange = () => {
+    setPasswordUid(null);
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordError(null);
+  };
+
+  const handleChangePassword = async () => {
+    if (!passwordUid) return;
+    setPasswordError(null);
+    setPasswordSuccess(null);
+
+    if (newPassword.length < 6) {
+      setPasswordError('La contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Las contraseñas no coinciden.');
+      return;
+    }
+
+    const user = users.find(u => u.uid === passwordUid);
+    const confirmed = window.confirm(
+      `¿Cambiar la contraseña de ${user?.email || passwordUid}?`
+    );
+    if (!confirmed) return;
+
+    setPasswordLoading(true);
+    try {
+      await changeUserPassword(passwordUid, newPassword);
+      setPasswordSuccess(user?.email || passwordUid);
+      setPasswordUid(null);
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch {
+      setPasswordError('Error al cambiar la contraseña.');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
@@ -96,6 +153,13 @@ const UserManagementPanel: React.FC = () => {
       <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg mb-6 text-sm">
         Los cambios de rol surten efecto cuando el usuario cierra sesión e inicia de nuevo.
       </div>
+
+      {passwordSuccess && (
+        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 text-sm flex justify-between items-center">
+          <span>Contraseña de <strong>{passwordSuccess}</strong> actualizada correctamente.</span>
+          <button onClick={() => setPasswordSuccess(null)} className="text-green-500 hover:text-green-700 ml-2">✕</button>
+        </div>
+      )}
 
       <div className="space-y-4">
         {users.map(user => {
@@ -154,7 +218,7 @@ const UserManagementPanel: React.FC = () => {
                   })}
                 </div>
 
-                {/* Save / Cancel buttons */}
+                {/* Save / Cancel / Password buttons */}
                 <div className="flex-shrink-0 flex items-center gap-2">
                   {hasChanges && (
                     <>
@@ -174,6 +238,17 @@ const UserManagementPanel: React.FC = () => {
                       </button>
                     </>
                   )}
+                  {!hasChanges && passwordUid !== user.uid && (
+                    <button
+                      onClick={() => handleOpenPasswordChange(user.uid)}
+                      title="Cambiar contraseña"
+                      className="p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -190,6 +265,52 @@ const UserManagementPanel: React.FC = () => {
               {user.roles.length === 0 && !hasChanges && (
                 <div className="mt-2">
                   <span className="text-xs text-gray-400 italic">Sin roles asignados</span>
+                </div>
+              )}
+
+              {/* Inline password change form */}
+              {passwordUid === user.uid && (
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <p className="text-xs font-medium text-gray-700 mb-2">Cambiar contraseña de {user.email}</p>
+                  {passwordError && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-md mb-2 text-xs">
+                      {passwordError}
+                    </div>
+                  )}
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                      placeholder="Nueva contraseña (mín. 6)"
+                      disabled={passwordLoading}
+                      className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                    />
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={e => setConfirmPassword(e.target.value)}
+                      placeholder="Confirmar contraseña"
+                      disabled={passwordLoading}
+                      className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleChangePassword}
+                        disabled={passwordLoading}
+                        className="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors whitespace-nowrap"
+                      >
+                        {passwordLoading ? 'Cambiando...' : 'Cambiar'}
+                      </button>
+                      <button
+                        onClick={handleCancelPasswordChange}
+                        disabled={passwordLoading}
+                        className="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
