@@ -66,6 +66,12 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product, onClos
                   {product.interactiva && (
                     <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-1 rounded-full">Interactiva</span>
                   )}
+                  {product.galeria && (
+                    <span className="bg-purple-100 text-purple-800 text-xs font-semibold px-2.5 py-1 rounded-full">Galeria</span>
+                  )}
+                  {product.bodega && (
+                    <span className="bg-amber-100 text-amber-800 text-xs font-semibold px-2.5 py-1 rounded-full">Bodega</span>
+                  )}
                 </div>
                 <p className="text-gray-600 italic pt-2">{product.descripcion}</p>
               </div>

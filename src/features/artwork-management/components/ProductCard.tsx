@@ -64,6 +64,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onViewDetail
               {product.category}
           </span>
       )}
+      <div className="absolute top-3 left-3 flex flex-col gap-1 z-30">
+        {product.galeria && (
+          <span className="bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg">Galeria</span>
+        )}
+        {product.bodega && (
+          <span className="bg-amber-600 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg">Bodega</span>
+        )}
+      </div>
     </div>
   );
 };
