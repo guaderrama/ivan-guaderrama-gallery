@@ -7,16 +7,18 @@ interface EditEditionModalProps {
   onSave: (edition: Edition) => void;
   edition: Edition;
   productName: string;
+  readOnly?: boolean;
 }
 
 // Define InputField helper component outside of the main component to prevent re-creation on every render.
 // This solves the bug where typing one character causes the input to lose focus.
-const InputField = ({ label, name, value, placeholder, onChange }: { 
-  label: string; 
-  name: keyof Edition; 
-  value: string; 
+const InputField = ({ label, name, value, placeholder, onChange, disabled }: {
+  label: string;
+  name: keyof Edition;
+  value: string;
   placeholder?: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  disabled?: boolean;
 }) => (
   <div>
     <label htmlFor={name} className="block text-sm font-bold text-gray-700 mb-1">
@@ -29,12 +31,13 @@ const InputField = ({ label, name, value, placeholder, onChange }: {
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className="form-input"
+      disabled={disabled}
+      className={`form-input ${disabled ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
     />
   </div>
 );
 
-const EditEditionModal: React.FC<EditEditionModalProps> = ({ isOpen, onClose, onSave, edition, productName }) => {
+const EditEditionModal: React.FC<EditEditionModalProps> = ({ isOpen, onClose, onSave, edition, productName, readOnly = false }) => {
   const [formData, setFormData] = useState<Edition>(edition);
 
   useEffect(() => {
@@ -102,37 +105,41 @@ const EditEditionModal: React.FC<EditEditionModalProps> = ({ isOpen, onClose, on
             </div>
 
             <div className="mt-6 space-y-4">
-              <InputField 
-                label="Ubicación de Exhibición" 
-                name="exhibitionLocation" 
-                value={formData.exhibitionLocation} 
+              <InputField
+                label="Ubicación de Exhibición"
+                name="exhibitionLocation"
+                value={formData.exhibitionLocation}
                 placeholder="ej: Galería Alvaro Obregon"
-                onChange={handleInputChange} 
+                onChange={handleInputChange}
+                disabled={readOnly}
               />
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <InputField 
-                  label="Galería / Vendedor" 
-                  name="gallerySeller" 
-                  value={formData.gallerySeller} 
+                <InputField
+                  label="Galería / Vendedor"
+                  name="gallerySeller"
+                  value={formData.gallerySeller}
                   placeholder="ej: Quivira / Jonathan"
-                  onChange={handleInputChange} 
+                  onChange={handleInputChange}
+                  disabled={readOnly}
                 />
-                <InputField 
-                  label="Nombre del Cliente" 
-                  name="clientName" 
-                  value={formData.clientName} 
+                <InputField
+                  label="Nombre del Cliente"
+                  name="clientName"
+                  value={formData.clientName}
                   placeholder="ej: John Doe"
-                  onChange={handleInputChange} 
+                  onChange={handleInputChange}
+                  disabled={readOnly}
                 />
               </div>
-              
-              <InputField 
-                label="OBR" 
-                name="salesInvoice" 
-                value={formData.salesInvoice} 
+
+              <InputField
+                label="OBR"
+                name="salesInvoice"
+                value={formData.salesInvoice}
                 placeholder="ej: QV-12345"
-                onChange={handleInputChange} 
+                onChange={handleInputChange}
+                disabled={readOnly}
               />
 
               <div>
@@ -145,19 +152,24 @@ const EditEditionModal: React.FC<EditEditionModalProps> = ({ isOpen, onClose, on
                   value={formData.comments}
                   onChange={handleInputChange}
                   rows={4}
-                  className="form-input"
+                  disabled={readOnly}
+                  className={`form-input ${readOnly ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
                   placeholder="ej: En préstamo, vendida, devuelta..."
                 ></textarea>
               </div>
             </div>
           </div>
           <div className="bg-gray-50 px-6 py-4 flex justify-end">
-            <button
-              type="submit"
-              className="px-5 py-2.5 border border-transparent text-sm font-bold rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Guardar Cambios
-            </button>
+            {readOnly ? (
+              <span className="text-sm text-gray-500 italic">Solo lectura</span>
+            ) : (
+              <button
+                type="submit"
+                className="px-5 py-2.5 border border-transparent text-sm font-bold rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Guardar Cambios
+              </button>
+            )}
           </div>
         </form>
       </div>

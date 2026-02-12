@@ -542,6 +542,7 @@ const App: React.FC = () => {
           onDeleteEdition={handleDeleteEdition}
           existingSkus={allExistingSkus}
           existingNames={allExistingNames}
+          canEditSeries={canWriteEditions}
         />
       )}
 

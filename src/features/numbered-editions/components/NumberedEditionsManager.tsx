@@ -16,6 +16,7 @@ interface NumberedEditionsManagerProps {
   onDeleteEdition: (productId: string, editionId: string) => void;
   existingSkus: string[];
   existingNames: string[];
+  canEditSeries?: boolean;
 }
 
 const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
@@ -29,7 +30,8 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
   onArchiveEdition,
   onDeleteEdition,
   existingSkus,
-  existingNames
+  existingNames,
+  canEditSeries = true
 }) => {
   console.log('📚 [COMPONENT] NumberedEditionsManager rendered with', products.length, 'products');
   console.log('📚 [COMPONENT] Products:', products);
@@ -221,28 +223,32 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
                     <option disabled>No se encontraron obras</option>
                 )}
             </select>
-            <button
-              onClick={() => selectedProduct && onEditSeries(selectedProduct)}
-              disabled={!selectedProduct}
-              className="p-2.5 rounded-lg text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Editar número de series"
-              title="Editar Serie"
-            >
-              <EditIcon className="h-5 w-5" />
-            </button>
-            <button
-              onClick={() => {
-                if (selectedProduct && window.confirm(`¿Estás seguro de que deseas eliminar "${selectedProduct.name}"? Esta acción no se puede deshacer.`)) {
-                  onDeleteSeries(selectedProduct.id);
-                }
-              }}
-              disabled={!selectedProduct}
-              className="p-2.5 rounded-lg text-red-600 bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Eliminar serie"
-              title="Eliminar Serie"
-            >
-              <TrashIcon className="h-5 w-5" />
-            </button>
+            {canEditSeries && (
+              <>
+                <button
+                  onClick={() => selectedProduct && onEditSeries(selectedProduct)}
+                  disabled={!selectedProduct}
+                  className="p-2.5 rounded-lg text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Editar número de series"
+                  title="Editar Serie"
+                >
+                  <EditIcon className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => {
+                    if (selectedProduct && window.confirm(`¿Estás seguro de que deseas eliminar "${selectedProduct.name}"? Esta acción no se puede deshacer.`)) {
+                      onDeleteSeries(selectedProduct.id);
+                    }
+                  }}
+                  disabled={!selectedProduct}
+                  className="p-2.5 rounded-lg text-red-600 bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Eliminar serie"
+                  title="Eliminar Serie"
+                >
+                  <TrashIcon className="h-5 w-5" />
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -263,34 +269,38 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
                                 <span className="text-gray-500">Sin Imagen</span>
                             </div>
                         )}
-                         <button
-                            onClick={triggerImageUpload}
-                            disabled={isUploadingImage}
-                            className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 flex items-center justify-center text-white text-sm font-bold opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-lg cursor-pointer disabled:cursor-wait disabled:opacity-100 disabled:bg-opacity-60"
-                            aria-label="Cambiar foto de la obra"
-                        >
-                            {isUploadingImage ? (
-                                <>
-                                    <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    <span>Subiendo...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <EditIcon className="h-5 w-5 mr-2" />
-                                    <span>Cambiar Foto</span>
-                                </>
-                            )}
-                        </button>
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleImageChange}
-                            className="hidden"
-                            accept="image/png, image/jpeg, image/webp"
-                        />
+                         {canEditSeries && (
+                          <>
+                            <button
+                                onClick={triggerImageUpload}
+                                disabled={isUploadingImage}
+                                className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 flex items-center justify-center text-white text-sm font-bold opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-lg cursor-pointer disabled:cursor-wait disabled:opacity-100 disabled:bg-opacity-60"
+                                aria-label="Cambiar foto de la obra"
+                            >
+                                {isUploadingImage ? (
+                                    <>
+                                        <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span>Subiendo...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <EditIcon className="h-5 w-5 mr-2" />
+                                        <span>Cambiar Foto</span>
+                                    </>
+                                )}
+                            </button>
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleImageChange}
+                                className="hidden"
+                                accept="image/png, image/jpeg, image/webp"
+                            />
+                          </>
+                         )}
                     </div>
                     <div className="mt-4">
                         <h3 className="text-2xl font-bold font-serif text-gray-900">{selectedProduct.name}</h3>
@@ -347,18 +357,21 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
                 onSave={handleSaveEditedEdition}
                 edition={editingEdition}
                 productName={`${selectedProduct.seriesName} (${selectedProduct.sku})`}
+                readOnly={!canEditSeries && !!(editingEdition.clientName || editingEdition.gallerySeller)}
             />
         )}
 
       {/* Floating Action Button */}
-      <button
-        onClick={onAddProduct}
-        className="fixed bottom-8 right-8 w-14 h-14 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-40"
-        aria-label="Agregar nueva obra seriada"
-        title="Agregar nueva obra seriada"
-      >
-        <PlusIcon className="h-7 w-7" />
-      </button>
+      {canEditSeries && (
+        <button
+          onClick={onAddProduct}
+          className="fixed bottom-8 right-8 w-14 h-14 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-40"
+          aria-label="Agregar nueva obra seriada"
+          title="Agregar nueva obra seriada"
+        >
+          <PlusIcon className="h-7 w-7" />
+        </button>
+      )}
     </div>
   );
 };
