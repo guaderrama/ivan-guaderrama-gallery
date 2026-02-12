@@ -84,8 +84,20 @@ const App: React.FC = () => {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [shippingSettings, setShippingSettings] = useState<ShippingSettings>(initialShippingSettings);
 
-  const [activeTab, setActiveTab] = useState<ActiveTab>('simulator');
+  const [activeTab, setActiveTabState] = useState<ActiveTab>(() => {
+    const stored = localStorage.getItem('activeTab');
+    const validNames = ALL_TABS.map(t => t.name);
+    if (stored && validNames.includes(stored as ActiveTab)) {
+      return stored as ActiveTab;
+    }
+    return 'simulator';
+  });
   const [isAddNumberedProductModalOpen, setIsAddNumberedProductModalOpen] = useState(false);
+
+  const setActiveTab = (tab: ActiveTab) => {
+    localStorage.setItem('activeTab', tab);
+    setActiveTabState(tab);
+  };
 
   // Compute visible tabs based on permissions
   const visibleTabs = useMemo(() => {
