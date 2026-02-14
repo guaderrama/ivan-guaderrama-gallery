@@ -110,14 +110,6 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
     try {
       setIsUploadingImage(true);
 
-      // Validate file size (max 100MB)
-      if (file.size > 100 * 1024 * 1024) {
-        console.error('❌ [SERIES IMAGE] File too large:', (file.size / 1024 / 1024).toFixed(2) + 'MB');
-        alert("La imagen es muy grande. El límite es 100MB.");
-        setIsUploadingImage(false);
-        return;
-      }
-
       console.log('✅ [SERIES IMAGE] File size OK');
 
       // Upload to Firebase Storage

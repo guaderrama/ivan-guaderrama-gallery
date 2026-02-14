@@ -130,162 +130,125 @@ export function useNumberedEditions(): UseNumberedEditionsReturn {
 
   // ============= SERIES OPERATIONS =============
 
-  // Create series
+  // Create series - throws on error so caller can handle it (does NOT set global error)
   const createSeries = useCallback(async (seriesData: NewNumberedProductData): Promise<string | null> => {
     try {
-      setError(null);
       const id = await editionsService.createSeries(seriesData);
       return id;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to create series';
-      setError(message);
       console.error('Error creating series:', err);
-      return null;
+      throw err;
     }
   }, []);
 
-  // Update series
+  // Update series - throws on error so caller can handle it
   const updateSeries = useCallback(
     async (seriesId: string, updates: Partial<NumberedProduct>): Promise<boolean> => {
       try {
-        setError(null);
         await editionsService.updateSeries(seriesId, updates);
         return true;
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to update series';
-        setError(message);
         console.error('Error updating series:', err);
-        return false;
+        throw err;
       }
     },
     []
   );
 
-  // Archive series
+  // Archive series - throws on error so caller can handle it
   const archiveSeries = useCallback(async (seriesId: string): Promise<boolean> => {
     try {
-      setError(null);
       await editionsService.archiveSeries(seriesId);
       return true;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to archive series';
-      setError(message);
       console.error('Error archiving series:', err);
-      return false;
+      throw err;
     }
   }, []);
 
-  // Delete series
+  // Delete series - throws on error so caller can handle it
   const deleteSeries = useCallback(async (seriesId: string): Promise<boolean> => {
     try {
-      setError(null);
       await editionsService.deleteSeries(seriesId);
       return true;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to delete series';
-      setError(message);
       console.error('Error deleting series:', err);
-      return false;
+      throw err;
     }
   }, []);
 
   // ============= EDITIONS OPERATIONS =============
 
-  // Create edition
+  // Create edition - throws on error so caller can handle it
   const createEdition = useCallback(
     async (seriesId: string, editionData: NewEditionData): Promise<string | null> => {
       try {
-        setError(null);
         const id = await editionsService.createEdition(seriesId, editionData);
-        // Refresh to get updated data
         await fetchSeries();
         return id;
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to create edition';
-        setError(message);
         console.error('Error creating edition:', err);
-        return null;
+        throw err;
       }
     },
     [fetchSeries]
   );
 
-  // Update edition
+  // Update edition - throws on error so caller can handle it
   const updateEdition = useCallback(
     async (seriesId: string, editionId: string, updates: Partial<Edition>): Promise<boolean> => {
       try {
-        console.log('📝 [HOOK] updateEdition called:', { seriesId, editionId, updates });
-        setError(null);
         await editionsService.updateEdition(seriesId, editionId, updates);
-        console.log('✅ [HOOK] Edition updated successfully');
-
-        // Refresh all series data to get updated edition
-        console.log('🔄 [HOOK] Refreshing series data after edition update...');
         await fetchSeries();
-        console.log('✅ [HOOK] Series data refreshed');
-
         return true;
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to update edition';
-        setError(message);
-        console.error('❌ [HOOK] Error updating edition:', err);
-        return false;
+        console.error('Error updating edition:', err);
+        throw err;
       }
     },
     [fetchSeries]
   );
 
-  // Archive edition
+  // Archive edition - throws on error so caller can handle it
   const archiveEdition = useCallback(
     async (seriesId: string, editionId: string): Promise<boolean> => {
       try {
-        setError(null);
         await editionsService.archiveEdition(seriesId, editionId);
-        // Refresh to get updated data
         await fetchSeries();
         return true;
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to archive edition';
-        setError(message);
         console.error('Error archiving edition:', err);
-        return false;
+        throw err;
       }
     },
     [fetchSeries]
   );
 
-  // Delete edition
+  // Delete edition - throws on error so caller can handle it
   const deleteEdition = useCallback(
     async (seriesId: string, editionId: string): Promise<boolean> => {
       try {
-        setError(null);
         await editionsService.deleteEdition(seriesId, editionId);
-        // Refresh to get updated data
         await fetchSeries();
         return true;
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to delete edition';
-        setError(message);
         console.error('Error deleting edition:', err);
-        return false;
+        throw err;
       }
     },
     [fetchSeries]
   );
 
-  // Sync editions to match desired total
+  // Sync editions to match desired total - throws on error so caller can handle it
   const syncEditions = useCallback(
     async (seriesId: string, newTotal: number): Promise<boolean> => {
       try {
-        setError(null);
         await editionsService.syncEditions(seriesId, newTotal);
         await fetchSeries();
         return true;
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to sync editions';
-        setError(message);
         console.error('Error syncing editions:', err);
-        return false;
+        throw err;
       }
     },
     [fetchSeries]

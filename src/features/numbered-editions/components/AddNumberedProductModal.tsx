@@ -38,11 +38,6 @@ const AddNumberedProductModal: React.FC<AddNumberedProductModalProps> = ({ isOpe
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 100 * 1024 * 1024) {
-      setError("La imagen es muy grande. El límite es 100MB.");
-      return;
-    }
-
     try {
       setIsUploadingImage(true);
       setError('');

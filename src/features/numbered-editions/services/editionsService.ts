@@ -33,25 +33,30 @@ export const editionsService = {
    * Create a new numbered series
    */
   async createSeries(seriesData: NewNumberedProductData): Promise<string> {
-    try {
-      console.log('🆕 [SERVICE] Creating new series:', seriesData);
-      const seriesRef = collection(db, SERIES_COLLECTION);
-      const docRef = await addDoc(seriesRef, {
-        ...seriesData,
-        seriesStatus: 'active',
-        createdAt: serverTimestamp(),
-      });
-      console.log('✅ [SERVICE] Series created with ID:', docRef.id);
+    console.log('🆕 [SERVICE] Creating new series:', seriesData);
+    const seriesRef = collection(db, SERIES_COLLECTION);
 
-      // Create all editions for this series
-      const totalEditions = seriesData.totalEditions || 1;
-      console.log(`🔢 [SERVICE] Creating ${totalEditions} editions for series ${docRef.id}...`);
+    // Step 1: Create the series document
+    const docRef = await addDoc(seriesRef, {
+      ...seriesData,
+      seriesStatus: 'active',
+      createdAt: serverTimestamp(),
+    });
+    console.log('✅ [SERVICE] Series created with ID:', docRef.id);
 
-      const editionsRef = collection(db, SERIES_COLLECTION, docRef.id, EDITIONS_SUBCOLLECTION);
-      const editionPromises = [];
+    // Step 2: Create editions in batches of 10 to avoid Firestore write limits
+    const totalEditions = seriesData.totalEditions || 1;
+    console.log(`🔢 [SERVICE] Creating ${totalEditions} editions for series ${docRef.id}...`);
 
-      for (let i = 1; i <= totalEditions; i++) {
-        const editionData = {
+    const editionsRef = collection(db, SERIES_COLLECTION, docRef.id, EDITIONS_SUBCOLLECTION);
+    const BATCH_SIZE = 10;
+
+    for (let batchStart = 1; batchStart <= totalEditions; batchStart += BATCH_SIZE) {
+      const batchEnd = Math.min(batchStart + BATCH_SIZE - 1, totalEditions);
+      const batchPromises = [];
+
+      for (let i = batchStart; i <= batchEnd; i++) {
+        batchPromises.push(addDoc(editionsRef, {
           editionNumber: i,
           editionStatus: 'active' as EditionStatus,
           clientName: '',
@@ -59,18 +64,20 @@ export const editionsService = {
           saleDate: null,
           notes: '',
           createdAt: serverTimestamp(),
-        };
-        editionPromises.push(addDoc(editionsRef, editionData));
+        }));
       }
 
-      await Promise.all(editionPromises);
-      console.log(`✅ [SERVICE] Created ${totalEditions} editions successfully`);
-
-      return docRef.id;
-    } catch (error) {
-      console.error('Error creating series:', error);
-      throw new Error('Failed to create series');
+      await Promise.all(batchPromises);
+      console.log(`✅ [SERVICE] Created editions ${batchStart}-${batchEnd}`);
     }
+
+    console.log(`✅ [SERVICE] Created all ${totalEditions} editions successfully`);
+
+    // Step 3: Touch the series document to trigger the real-time subscription refresh
+    // (the subscription listens to the series collection, not the editions subcollection)
+    await updateDoc(docRef, { updatedAt: serverTimestamp() });
+
+    return docRef.id;
   },
 
   /**

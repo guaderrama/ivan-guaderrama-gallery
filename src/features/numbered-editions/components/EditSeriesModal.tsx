@@ -39,11 +39,6 @@ const EditSeriesModal: React.FC<EditSeriesModalProps> = ({ onClose, onSave, prod
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 100 * 1024 * 1024) {
-      setError('La imagen es muy grande. El limite es 100MB.');
-      return;
-    }
-
     try {
       setIsUploadingImage(true);
       setError('');
