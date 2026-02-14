@@ -74,8 +74,8 @@ const AddNumberedProductModal: React.FC<AddNumberedProductModalProps> = ({ isOpe
       setError('Nombre y SKU son campos obligatorios.');
       return;
     }
-    if (existingSkus.includes(trimmedSku)) {
-      setError('Este SKU ya existe. Por favor, elige uno único.');
+    if (existingSkus.includes(trimmedSku.toUpperCase())) {
+      setError('Este SKU ya existe en obras seriadas. Por favor, elige uno único.');
       return;
     }
     if (totalEditions <= 0) {

@@ -159,6 +159,10 @@ const App: React.FC = () => {
     ];
   }, [catalog, numberedProducts]);
 
+  const numberedEditionsSkus = useMemo(() => {
+    return numberedProducts.map(np => np.sku?.toUpperCase() || '').filter(s => s);
+  }, [numberedProducts]);
+
   // Computed values
   const filteredCatalog = useMemo(() => {
     let filtered = catalog.filter(product => {
@@ -622,7 +626,7 @@ const App: React.FC = () => {
         isOpen={isAddNumberedProductModalOpen}
         onClose={() => setIsAddNumberedProductModalOpen(false)}
         onSave={handleAddNumberedProduct}
-        existingSkus={allExistingSkus}
+        existingSkus={numberedEditionsSkus}
       />
 
       {editingSeriesProduct && (
