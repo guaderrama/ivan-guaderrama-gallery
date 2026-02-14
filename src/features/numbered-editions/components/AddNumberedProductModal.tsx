@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { NewNumberedProductData } from '../types';
+import { storageService } from '@/shared/services/storageService';
 
 interface AddNumberedProductModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ const AddNumberedProductModal: React.FC<AddNumberedProductModalProps> = ({ isOpe
   const [totalEditions, setTotalEditions] = useState<number>(1);
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [error, setError] = useState('');
 
@@ -25,30 +27,39 @@ const AddNumberedProductModal: React.FC<AddNumberedProductModalProps> = ({ isOpe
       setTotalEditions(1);
       setImageUrl(undefined);
       setImagePreview(null);
+      setIsUploadingImage(false);
       setError('');
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
-  
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 100 * 1024 * 1024) { // 100MB limit
-        setError("La imagen es muy grande. El límite es 100MB.");
-        return;
-      }
+    if (!file) return;
+
+    if (file.size > 100 * 1024 * 1024) {
+      setError("La imagen es muy grande. El límite es 100MB.");
+      return;
+    }
+
+    try {
+      setIsUploadingImage(true);
+      setError('');
+
+      // Preview local
       const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setImageUrl(result);
-        setImagePreview(result);
-        setError('');
-      };
-      reader.onerror = () => {
-        setError("No se pudo leer el archivo de imagen.");
-      };
+      reader.onloadend = () => setImagePreview(reader.result as string);
       reader.readAsDataURL(file);
+
+      // Upload to Firebase Storage
+      const filename = storageService.generateUniqueFilename(file.name, 'numbered-editions');
+      const downloadURL = await storageService.uploadImage(file, filename);
+      setImageUrl(downloadURL);
+      setIsUploadingImage(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al subir imagen.');
+      setIsUploadingImage(false);
     }
   };
 
@@ -155,9 +166,10 @@ const AddNumberedProductModal: React.FC<AddNumberedProductModalProps> = ({ isOpe
                     <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                    disabled={isUploadingImage}
+                    className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
                     >
-                    {imagePreview ? 'Cambiar Foto' : 'Subir Foto'}
+                    {isUploadingImage ? 'Subiendo...' : (imagePreview ? 'Cambiar Foto' : 'Subir Foto')}
                     </button>
                     <input
                     id="image-upload"
@@ -195,9 +207,10 @@ const AddNumberedProductModal: React.FC<AddNumberedProductModalProps> = ({ isOpe
             </button>
             <button
               type="submit"
+              disabled={isUploadingImage}
               className="px-5 py-2.5 border border-transparent text-sm font-bold rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              Agregar Producto
+              {isUploadingImage ? 'Subiendo imagen...' : 'Agregar Producto'}
             </button>
           </div>
         </form>
