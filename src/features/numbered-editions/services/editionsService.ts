@@ -310,6 +310,16 @@ export const editionsService = {
   // ============= EDITIONS OPERATIONS =============
 
   /**
+   * Touch the series document to trigger real-time subscription refresh.
+   * Needed because the subscription listens to the series collection,
+   * not the editions subcollection.
+   */
+  async _touchSeries(seriesId: string | number): Promise<void> {
+    const seriesRef = doc(db, SERIES_COLLECTION, seriesId.toString());
+    await updateDoc(seriesRef, { updatedAt: serverTimestamp() });
+  },
+
+  /**
    * Create a new edition in a series
    */
   async createEdition(seriesId: string | number, editionData: NewEditionData): Promise<string> {
@@ -320,6 +330,7 @@ export const editionsService = {
         status: 'active',
         createdAt: serverTimestamp(),
       });
+      await this._touchSeries(seriesId);
       return docRef.id;
     } catch (error) {
       console.error('Error creating edition:', error);
@@ -332,16 +343,12 @@ export const editionsService = {
    */
   async updateEdition(seriesId: string | number, editionId: string | number, updates: Partial<Edition>): Promise<void> {
     try {
-      console.log('🔧 [SERVICE] updateEdition called with:', { seriesId, editionId, updates });
       const editionRef = doc(db, SERIES_COLLECTION, seriesId.toString(), EDITIONS_SUBCOLLECTION, editionId.toString());
-      console.log('🔧 [SERVICE] Edition path:', editionRef.path);
 
       await updateDoc(editionRef, {
         ...updates,
         updatedAt: serverTimestamp(),
       });
-
-      console.log('✅ [SERVICE] Edition updated in Firestore successfully');
     } catch (error) {
       console.error('❌ [SERVICE] Error updating edition:', error);
       throw new Error('Failed to update edition');
@@ -367,6 +374,7 @@ export const editionsService = {
         status: newStatus,
         updatedAt: serverTimestamp(),
       });
+      await this._touchSeries(seriesId);
     } catch (error) {
       console.error('Error archiving edition:', error);
       throw new Error('Failed to archive edition');
@@ -383,6 +391,7 @@ export const editionsService = {
         status: 'deleted',
         updatedAt: serverTimestamp(),
       });
+      await this._touchSeries(seriesId);
     } catch (error) {
       console.error('Error deleting edition:', error);
       throw new Error('Failed to delete edition');
@@ -404,14 +413,17 @@ export const editionsService = {
 
       // Filter out deleted editions in memory
       const editions = snapshot.docs
-        .map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt instanceof Timestamp
-            ? doc.data().createdAt.toDate().toISOString()
-            : new Date().toISOString(),
-        }))
-        .filter(edition => edition.status !== 'deleted') as Edition[];
+        .map(d => {
+          const data = d.data();
+          return {
+            id: d.id,
+            ...data,
+            createdAt: data.createdAt instanceof Timestamp
+              ? data.createdAt.toDate().toISOString()
+              : new Date().toISOString(),
+          } as Edition;
+        })
+        .filter(edition => edition.editionStatus !== 'deleted' && edition.status !== 'deleted');
 
       console.log(`📄 [EDITIONS] Returning ${editions.length} active editions`);
       return editions;

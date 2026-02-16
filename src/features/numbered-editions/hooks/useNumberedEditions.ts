@@ -179,79 +179,86 @@ export function useNumberedEditions(): UseNumberedEditionsReturn {
 
   // ============= EDITIONS OPERATIONS =============
 
-  // Create edition - throws on error so caller can handle it
+  // Create edition - service touches series doc to trigger subscription refresh
   const createEdition = useCallback(
     async (seriesId: string, editionData: NewEditionData): Promise<string | null> => {
       try {
         const id = await editionsService.createEdition(seriesId, editionData);
-        await fetchSeries();
         return id;
       } catch (err) {
         console.error('Error creating edition:', err);
         throw err;
       }
     },
-    [fetchSeries]
+    []
   );
 
-  // Update edition - throws on error so caller can handle it
+  // Update edition - optimistic local state update (no re-fetch needed)
   const updateEdition = useCallback(
     async (seriesId: string, editionId: string, updates: Partial<Edition>): Promise<boolean> => {
       try {
         await editionsService.updateEdition(seriesId, editionId, updates);
-        await fetchSeries();
+
+        // Optimistic update: patch the local state immediately
+        setSeries(prev => prev.map(s => {
+          if (s.id !== seriesId) return s;
+          return {
+            ...s,
+            editions: s.editions.map(e =>
+              e.id === editionId ? { ...e, ...updates } : e
+            ),
+          };
+        }));
+
         return true;
       } catch (err) {
         console.error('Error updating edition:', err);
         throw err;
       }
     },
-    [fetchSeries]
+    []
   );
 
-  // Archive edition - throws on error so caller can handle it
+  // Archive edition - service touches series doc to trigger subscription refresh
   const archiveEdition = useCallback(
     async (seriesId: string, editionId: string): Promise<boolean> => {
       try {
         await editionsService.archiveEdition(seriesId, editionId);
-        await fetchSeries();
         return true;
       } catch (err) {
         console.error('Error archiving edition:', err);
         throw err;
       }
     },
-    [fetchSeries]
+    []
   );
 
-  // Delete edition - throws on error so caller can handle it
+  // Delete edition - service touches series doc to trigger subscription refresh
   const deleteEdition = useCallback(
     async (seriesId: string, editionId: string): Promise<boolean> => {
       try {
         await editionsService.deleteEdition(seriesId, editionId);
-        await fetchSeries();
         return true;
       } catch (err) {
         console.error('Error deleting edition:', err);
         throw err;
       }
     },
-    [fetchSeries]
+    []
   );
 
-  // Sync editions to match desired total - throws on error so caller can handle it
+  // Sync editions - needs manual fetch since it creates many docs
   const syncEditions = useCallback(
     async (seriesId: string, newTotal: number): Promise<boolean> => {
       try {
         await editionsService.syncEditions(seriesId, newTotal);
-        await fetchSeries();
         return true;
       } catch (err) {
         console.error('Error syncing editions:', err);
         throw err;
       }
     },
-    [fetchSeries]
+    []
   );
 
   return {

@@ -45,6 +45,9 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
   const [filterStatus, setFilterStatus] = useState<'all' | 'sold' | 'available'>('all');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
+  // Track the last edited edition to scroll back to it after data refresh
+  const lastEditedEditionRef = useRef<number | null>(null);
+
   useEffect(() => {
     if (!selectedSku && products.length > 0) {
       setSelectedSku(products[0].sku);
@@ -62,6 +65,9 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
     );
   }, [products, searchTerm]);
 
+  // Track which SKU was selected to detect actual product switches
+  const prevSelectedSkuRef = useRef(selectedSku);
+
   useEffect(() => {
     const isSelectedInList = filteredProducts.some(p => p.sku === selectedSku);
     if (!isSelectedInList && filteredProducts.length > 0) {
@@ -69,8 +75,27 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
     } else if (filteredProducts.length === 0) {
         setSelectedSku(undefined);
     }
-    setFilterStatus('all'); // Reset filter when product changes
+
+    // Only reset filter when the user actually switches to a different product
+    if (prevSelectedSkuRef.current !== selectedSku) {
+      setFilterStatus('all');
+      prevSelectedSkuRef.current = selectedSku;
+    }
   }, [filteredProducts, selectedSku]);
+
+  // Scroll to the last edited edition after data refreshes
+  useEffect(() => {
+    if (lastEditedEditionRef.current !== null) {
+      const editionNum = lastEditedEditionRef.current;
+      lastEditedEditionRef.current = null;
+      requestAnimationFrame(() => {
+        const card = document.querySelector(`[data-edition="${editionNum}"]`);
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+    }
+  }, [products]);
 
 
   const selectedProduct = useMemo(() => {
@@ -151,6 +176,7 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
 
   const handleSaveEditedEdition = (updatedEdition: Edition) => {
     if (selectedProduct) {
+      lastEditedEditionRef.current = updatedEdition.editionNumber;
       onSaveEdition(selectedProduct.id, updatedEdition);
     }
     setEditingEdition(null);
@@ -315,6 +341,7 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
                         return (
                             <button
                                 key={edition.id}
+                                data-edition={edition.editionNumber}
                                 onClick={() => handleSelectEditionToEdit(edition)}
                                 className={`flex flex-col items-center justify-center aspect-square rounded-lg border-2 transition-all duration-200 cursor-pointer hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                                     isSold
