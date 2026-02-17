@@ -93,10 +93,16 @@ const App: React.FC = () => {
     return 'simulator';
   });
   const [isAddNumberedProductModalOpen, setIsAddNumberedProductModalOpen] = useState(false);
+  const [preselectedSku, setPreselectedSku] = useState<string | null>(null);
 
   const setActiveTab = (tab: ActiveTab) => {
     localStorage.setItem('activeTab', tab);
     setActiveTabState(tab);
+  };
+
+  const handleNavigateToNumberedEdition = (sku: string) => {
+    setPreselectedSku(sku);
+    setActiveTab('seriadas');
   };
 
   // Compute visible tabs based on permissions
@@ -534,6 +540,7 @@ const App: React.FC = () => {
       {activeTab === 'seriadas' && (
         <NumberedEditionsManager
           products={numberedProducts}
+          initialSelectedSku={preselectedSku}
           onAddProduct={() => setIsAddNumberedProductModalOpen(true)}
           onEditSeries={(product) => setEditingSeriesProduct(product)}
           onUpdateSeriesImage={async (productId: string, imageUrl: string) => {
@@ -619,6 +626,7 @@ const App: React.FC = () => {
           onDelete={handleDeleteProduct}
           onArchive={handleArchiveProduct}
           shippingSettings={shippingSettings}
+          onNavigateToNumberedEdition={handleNavigateToNumberedEdition}
         />
       )}
 

@@ -5,9 +5,10 @@ import { CATEGORY_COLORS } from '@/shared/constants';
 interface ProductDetailModalProps {
   product: Product;
   onClose: () => void;
+  onNavigateToNumberedEdition?: (sku: string) => void;
 }
 
-const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product, onClose }) => {
+const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product, onClose, onNavigateToNumberedEdition }) => {
   // Prevent clicks inside the modal from closing it
   const handleModalContentClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -76,6 +77,20 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product, onClos
                     <span className="bg-amber-100 text-amber-800 text-xs font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider">Bodega</span>
                   )}
                 </div>
+                {product.limitedEdition && onNavigateToNumberedEdition && (
+                  <button
+                    onClick={() => {
+                      onNavigateToNumberedEdition(product.sku);
+                      onClose();
+                    }}
+                    className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-bold rounded-lg hover:bg-gray-800 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                    Ir a Obra Seriada
+                  </button>
+                )}
                 <p className="text-gray-600 italic pt-2">{product.descripcion}</p>
               </div>
 

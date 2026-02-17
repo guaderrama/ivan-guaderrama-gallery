@@ -17,6 +17,7 @@ interface NumberedEditionsManagerProps {
   existingSkus: string[];
   existingNames: string[];
   canEditSeries?: boolean;
+  initialSelectedSku?: string | null;
 }
 
 const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
@@ -31,7 +32,8 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
   onDeleteEdition,
   existingSkus,
   existingNames,
-  canEditSeries = true
+  canEditSeries = true,
+  initialSelectedSku
 }) => {
   console.log('📚 [COMPONENT] NumberedEditionsManager rendered with', products.length, 'products');
   console.log('📚 [COMPONENT] Products:', products);
@@ -53,6 +55,12 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
       setSelectedSku(products[0].sku);
     }
   }, [products, selectedSku]);
+
+  useEffect(() => {
+    if (initialSelectedSku && products.some(p => p.sku === initialSelectedSku)) {
+      setSelectedSku(initialSelectedSku);
+    }
+  }, [initialSelectedSku, products]);
 
   const filteredProducts = useMemo(() => {
     if (!searchTerm) {
