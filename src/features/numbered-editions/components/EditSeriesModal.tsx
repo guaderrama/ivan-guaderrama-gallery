@@ -4,6 +4,11 @@ import { NumberedProduct } from '../types';
 import { CATEGORIES, ProductCategory } from '@/features/artwork-management/types';
 import { storageService } from '@/shared/services/storageService';
 
+const validCategory = (cat: string | undefined): ProductCategory => {
+  if (cat && (CATEGORIES as readonly string[]).includes(cat)) return cat as ProductCategory;
+  return 'ORIGINAL';
+};
+
 interface EditSeriesModalProps {
   product: NumberedProduct;
   onClose: () => void;
@@ -15,7 +20,7 @@ const EditSeriesModal: React.FC<EditSeriesModalProps> = ({ onClose, onSave, prod
   const [sku, setSku] = useState(product.sku || '');
   const [description, setDescription] = useState(product.description || '');
   const [basePrice, setBasePrice] = useState(product.basePrice || 0);
-  const [category, setCategory] = useState<ProductCategory>(product.category || 'LIMITED EDITION');
+  const [category, setCategory] = useState<ProductCategory>(validCategory(product.category));
   const [imageUrl, setImageUrl] = useState(product.imageUrl || '');
   const [imagePreview, setImagePreview] = useState(product.imageUrl || '');
   const [newTotalEditions, setNewTotalEditions] = useState(product.totalEditions);
@@ -28,7 +33,7 @@ const EditSeriesModal: React.FC<EditSeriesModalProps> = ({ onClose, onSave, prod
     setSku(product.sku || '');
     setDescription(product.description || '');
     setBasePrice(product.basePrice || 0);
-    setCategory(product.category || 'LIMITED EDITION');
+    setCategory(validCategory(product.category));
     setImageUrl(product.imageUrl || '');
     setImagePreview(product.imageUrl || '');
     setNewTotalEditions(product.totalEditions);

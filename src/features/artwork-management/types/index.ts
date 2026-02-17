@@ -1,6 +1,5 @@
 export const CATEGORIES = [
   'ORIGINAL',
-  'LIMITED EDITION',
   'METAL SCULPTURE',
   'WALL SCULPTURE',
   'LIGHT EDITION',
@@ -29,6 +28,7 @@ export interface Product {
   vendido?: boolean;
   galeria?: boolean;
   bodega?: boolean;
+  limitedEdition?: boolean;
   // Firebase fields
   status?: ArtworkStatus;
   createdAt?: Date | { seconds: number; nanoseconds: number };

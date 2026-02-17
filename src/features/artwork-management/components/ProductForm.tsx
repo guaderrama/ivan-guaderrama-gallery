@@ -266,6 +266,12 @@ const ProductForm: React.FC<ProductFormProps> = (
                 Bodega
             </label>
           </div>
+          <div className="flex items-center">
+            <input id="limitedEdition" name="limitedEdition" type="checkbox" checked={!!productData.limitedEdition} onChange={handleCheckboxChange} className="h-4 w-4 text-gray-800 focus:ring-gray-600 border-gray-300 rounded bg-gray-50" />
+            <label htmlFor="limitedEdition" className="ml-2 block text-sm font-bold text-gray-700">
+                Limited Edition
+            </label>
+          </div>
         </div>
         
         <div>

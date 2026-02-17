@@ -62,12 +62,15 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onViewDetail
         </div>
       </div>
 
-      {product.category && (
+      {product.category && CATEGORY_COLORS[product.category] && (
           <span className={`absolute top-3 right-3 text-xs font-bold px-2.5 py-1 rounded-full shadow-lg z-30 ${CATEGORY_COLORS[product.category]}`}>
               {product.category}
           </span>
       )}
       <div className="absolute top-3 left-3 flex flex-col gap-1 z-30">
+        {product.limitedEdition && (
+          <span className="bg-gray-800 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg uppercase tracking-wider">Limited Edition</span>
+        )}
         {product.galeria && (
           <span className="bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg uppercase tracking-wider">Galeria</span>
         )}

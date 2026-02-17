@@ -58,10 +58,13 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product, onClos
                   {product.vendido && (
                     <span className="bg-red-600 text-white text-sm font-bold px-3 py-1.5 rounded-full uppercase tracking-wider">Vendido</span>
                   )}
-                  {product.category && (
+                  {product.category && CATEGORY_COLORS[product.category] && (
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${CATEGORY_COLORS[product.category]}`}>
                         {product.category}
                     </span>
+                  )}
+                  {product.limitedEdition && (
+                    <span className="bg-gray-800 text-white text-xs font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider">Limited Edition</span>
                   )}
                   {product.interactiva && (
                     <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-1 rounded-full">Interactiva</span>
