@@ -14,7 +14,7 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onViewDetails, canEdit = true, onNavigateToNumberedEdition }) => {
   return (
-    <div className="group relative break-inside-avoid overflow-hidden rounded-lg shadow-sm hover:shadow-xl transition-shadow duration-300">
+    <div className="group relative isolate break-inside-avoid overflow-hidden rounded-lg shadow-sm hover:shadow-xl transition-shadow duration-300">
       {product.vendido && (
         <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none">
           <span className="text-3xl font-black font-serif text-white bg-red-600 border-4 border-white px-8 py-3 rounded-md transform -rotate-12 shadow-lg">
@@ -34,9 +34,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onViewDetail
         </div>
       )}
 
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-in-out pointer-events-none z-10"></div>
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-in-out pointer-events-none z-[65]"></div>
 
-      <div className="absolute inset-0 p-4 flex flex-col justify-end text-white opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 ease-in-out z-50">
+      <div className="absolute inset-0 p-4 flex flex-col justify-end text-white opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 ease-in-out z-[70]">
         <h3 className="text-lg font-bold font-serif">{product.nombre}</h3>
         <p className="text-sm font-mono opacity-80 mt-1">{product.sku}</p>
         
