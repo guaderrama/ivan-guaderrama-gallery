@@ -124,7 +124,7 @@ const App: React.FC = () => {
     updateArtwork,
     deleteArtwork,
     archiveArtwork,
-  } = useArtworks({ status: showArchived ? 'all' : 'active' });
+  } = useArtworks({ status: 'all' });
 
   const {
     series: numberedProducts,
@@ -165,26 +165,26 @@ const App: React.FC = () => {
 
   // Computed values
   const filteredCatalog = useMemo(() => {
-    let filtered = catalog.filter(product => {
-      // Si NO estamos mostrando archivados, ocultar:
-      // 1. Obras con status 'archived'
-      // 2. Obras vendidas (vendido: true)
-      if (!showArchived) {
-        return product.status !== 'archived' && !product.vendido;
-      }
-      // Si estamos mostrando archivados, mostrar SOLO las vendidas
-      return product.vendido === true;
-    });
-
-    if (selectedCategory !== 'ALL') {
-      filtered = filtered.filter(p => p.category === selectedCategory);
-    }
+    let filtered: typeof catalog;
 
     if (searchTerm) {
-      filtered = filtered.filter(p =>
+      // When searching, search ALL items (active + archived + sold)
+      filtered = catalog.filter(p =>
         p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.sku.toLowerCase().includes(searchTerm.toLowerCase())
       );
+    } else {
+      // No search: apply archive/sold filter
+      filtered = catalog.filter(product => {
+        if (!showArchived) {
+          return product.status !== 'archived' && !product.vendido;
+        }
+        return product.vendido === true;
+      });
+    }
+
+    if (selectedCategory !== 'ALL') {
+      filtered = filtered.filter(p => p.category === selectedCategory);
     }
 
     return filtered;
