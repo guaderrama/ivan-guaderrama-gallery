@@ -60,7 +60,7 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
     }
     const lowercasedTerm = searchTerm.toLowerCase();
     return products.filter(p =>
-        p.name.toLowerCase().includes(lowercasedTerm) ||
+        (p.seriesName || p.name || '').toLowerCase().includes(lowercasedTerm) ||
         p.sku.toLowerCase().includes(lowercasedTerm)
     );
   }, [products, searchTerm]);
@@ -234,7 +234,7 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
                 {filteredProducts.length > 0 ? (
                     filteredProducts.map(p => (
                         <option key={p.sku} value={p.sku}>
-                            {p.name} ({p.sku})
+                            {p.seriesName || p.name} ({p.sku})
                         </option>
                     ))
                 ) : (
@@ -254,7 +254,7 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
                 </button>
                 <button
                   onClick={() => {
-                    if (selectedProduct && window.confirm(`¿Estás seguro de que deseas eliminar "${selectedProduct.name}"? Esta acción no se puede deshacer.`)) {
+                    if (selectedProduct && window.confirm(`¿Estás seguro de que deseas eliminar "${selectedProduct.seriesName || selectedProduct.name}"? Esta acción no se puede deshacer.`)) {
                       onDeleteSeries(selectedProduct.id);
                     }
                   }}
@@ -279,7 +279,7 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
                         {selectedProduct.imageUrl ? (
                             <img 
                                 src={selectedProduct.imageUrl} 
-                                alt={`Foto de ${selectedProduct.name}`}
+                                alt={`Foto de ${selectedProduct.seriesName || selectedProduct.name}`}
                                 className="w-full h-auto object-cover rounded-lg shadow-lg border"
                             />
                         ) : (
@@ -321,7 +321,7 @@ const NumberedEditionsManager: React.FC<NumberedEditionsManagerProps> = ({
                          )}
                     </div>
                     <div className="mt-4">
-                        <h3 className="text-2xl font-bold font-serif text-gray-900">{selectedProduct.name}</h3>
+                        <h3 className="text-2xl font-bold font-serif text-gray-900">{selectedProduct.seriesName || selectedProduct.name}</h3>
                         <p className="text-sm text-gray-500 font-mono">{selectedProduct.sku}</p>
                         <p className="text-sm text-gray-600 mt-2">
                             Total de Ediciones: <span className="font-bold">{selectedProduct.totalEditions}</span>

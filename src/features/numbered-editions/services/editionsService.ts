@@ -86,8 +86,13 @@ export const editionsService = {
   async updateSeries(seriesId: string | number, updates: Partial<NumberedProduct>): Promise<void> {
     try {
       const seriesRef = doc(db, SERIES_COLLECTION, seriesId.toString());
+      // Sync name field with seriesName for backward compat
+      const syncedUpdates = { ...updates };
+      if (syncedUpdates.seriesName) {
+        (syncedUpdates as Record<string, unknown>).name = syncedUpdates.seriesName;
+      }
       await updateDoc(seriesRef, {
-        ...updates,
+        ...syncedUpdates,
         updatedAt: serverTimestamp(),
       });
     } catch (error) {

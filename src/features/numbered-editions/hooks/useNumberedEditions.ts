@@ -141,11 +141,23 @@ export function useNumberedEditions(): UseNumberedEditionsReturn {
     }
   }, []);
 
-  // Update series - throws on error so caller can handle it
+  // Update series - optimistic local state update + Firestore write
   const updateSeries = useCallback(
     async (seriesId: string, updates: Partial<NumberedProduct>): Promise<boolean> => {
       try {
         await editionsService.updateSeries(seriesId, updates);
+
+        // Optimistic update: patch the local state immediately
+        setSeries(prev => prev.map(s => {
+          if (s.id !== seriesId) return s;
+          return {
+            ...s,
+            ...updates,
+            // Sync name with seriesName for display
+            ...(updates.seriesName ? { name: updates.seriesName } : {}),
+          };
+        }));
+
         return true;
       } catch (err) {
         console.error('Error updating series:', err);
