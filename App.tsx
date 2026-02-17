@@ -530,6 +530,7 @@ const App: React.FC = () => {
                 onEdit={(p) => setEditingProduct(p)}
                 onViewDetails={(p) => setViewingProduct(p)}
                 canEdit={canWriteCatalog}
+                onNavigateToNumberedEdition={handleNavigateToNumberedEdition}
               />
             ))}
           </div>

@@ -9,9 +9,10 @@ interface ProductCardProps {
   onEdit: (product: Product) => void;
   onViewDetails: (product: Product) => void;
   canEdit?: boolean;
+  onNavigateToNumberedEdition?: (sku: string) => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onViewDetails, canEdit = true }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onViewDetails, canEdit = true, onNavigateToNumberedEdition }) => {
   return (
     <div className="group relative break-inside-avoid overflow-hidden rounded-lg shadow-sm hover:shadow-xl transition-shadow duration-300">
       {product.vendido && (
@@ -67,9 +68,18 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onViewDetail
               {product.category}
           </span>
       )}
-      <div className="absolute top-3 left-3 flex flex-col gap-1 z-30">
+      <div className="absolute top-3 left-3 flex flex-col gap-1 z-[60]">
         {product.limitedEdition && (
-          <span className="bg-gray-800 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg uppercase tracking-wider">Limited Edition</span>
+          onNavigateToNumberedEdition ? (
+            <button
+              onClick={(e) => { e.stopPropagation(); onNavigateToNumberedEdition(product.sku); }}
+              className="bg-gray-800 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg uppercase tracking-wider hover:bg-gray-700 transition-colors cursor-pointer"
+            >
+              Limited Edition →
+            </button>
+          ) : (
+            <span className="bg-gray-800 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg uppercase tracking-wider">Limited Edition</span>
+          )
         )}
         {product.galeria && (
           <span className="bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg uppercase tracking-wider">Galeria</span>
