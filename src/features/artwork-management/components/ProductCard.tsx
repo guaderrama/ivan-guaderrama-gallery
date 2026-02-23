@@ -68,7 +68,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onViewDetail
               {product.category}
           </span>
       )}
-      <div className="absolute top-3 left-3 flex flex-col gap-1 z-[60]">
+      <div className="absolute top-3 left-3 flex flex-col gap-1 z-[80]">
         {product.limitedEdition && (
           onNavigateToNumberedEdition ? (
             <button
