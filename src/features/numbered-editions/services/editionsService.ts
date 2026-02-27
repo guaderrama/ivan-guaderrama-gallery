@@ -154,29 +154,26 @@ export const editionsService = {
 
       const snapshot = await getDocs(q);
       console.log(`📚 [SERIES] Found ${snapshot.docs.length} series documents (before filtering)`);
-      const seriesList: NumberedProduct[] = [];
 
-      for (const seriesDoc of snapshot.docs) {
-        const seriesData = seriesDoc.data();
+      // Filter out deleted series first
+      const activeDocs = snapshot.docs.filter(d => d.data().seriesStatus !== 'deleted');
+      console.log(`📚 [SERIES] ${activeDocs.length} active, ${snapshot.docs.length - activeDocs.length} deleted`);
 
-        // Filter out deleted series in memory
-        if (seriesData.seriesStatus === 'deleted') {
-          console.log(`📚 [SERIES] Skipping deleted series: ${seriesDoc.id}`);
-          continue;
-        }
-
-        // Get editions for this series
-        const editions = await editionsService.getEditionsBySeries(seriesDoc.id);
-
-        seriesList.push({
-          id: seriesDoc.id,
-          ...seriesData,
-          editions,
-          createdAt: seriesData.createdAt instanceof Timestamp
-            ? seriesData.createdAt.toDate().toISOString()
-            : new Date().toISOString(),
-        } as NumberedProduct);
-      }
+      // Fetch all editions in parallel for speed
+      const seriesList = await Promise.all(
+        activeDocs.map(async (seriesDoc) => {
+          const seriesData = seriesDoc.data();
+          const editions = await editionsService.getEditionsBySeries(seriesDoc.id);
+          return {
+            id: seriesDoc.id,
+            ...seriesData,
+            editions,
+            createdAt: seriesData.createdAt instanceof Timestamp
+              ? seriesData.createdAt.toDate().toISOString()
+              : new Date().toISOString(),
+          } as NumberedProduct;
+        })
+      );
 
       // Deduplicate by SKU — keep the first (most recent by createdAt desc)
       const seenSkus = new Set<string>();
@@ -210,32 +207,26 @@ export const editionsService = {
       q,
       async (snapshot) => {
         console.log(`📚 [SERIES] Received ${snapshot.docs.length} series documents`);
-        const seriesList: NumberedProduct[] = [];
 
-        for (const seriesDoc of snapshot.docs) {
-          const seriesData = seriesDoc.data();
+        // Filter out deleted series first
+        const activeDocs = snapshot.docs.filter(d => d.data().seriesStatus !== 'deleted');
+        console.log(`📚 [SERIES] ${activeDocs.length} active, ${snapshot.docs.length - activeDocs.length} deleted`);
 
-          // Filter out deleted series in memory (no index needed)
-          if (seriesData.seriesStatus === 'deleted') {
-            console.log(`📚 [SERIES] Skipping deleted series: ${seriesDoc.id}`);
-            continue;
-          }
-
-          console.log(`📚 [SERIES] Processing series: ${seriesDoc.id}`, seriesData);
-
-          // Get editions for this series
-          const editions = await editionsService.getEditionsBySeries(seriesDoc.id);
-          console.log(`📚 [SERIES] Found ${editions.length} editions for series ${seriesDoc.id}`);
-
-          seriesList.push({
-            id: seriesDoc.id,
-            ...seriesData,
-            editions,
-            createdAt: seriesData.createdAt instanceof Timestamp
-              ? seriesData.createdAt.toDate().toISOString()
-              : new Date().toISOString(),
-          } as NumberedProduct);
-        }
+        // Fetch all editions in parallel for speed
+        const seriesList = await Promise.all(
+          activeDocs.map(async (seriesDoc) => {
+            const seriesData = seriesDoc.data();
+            const editions = await editionsService.getEditionsBySeries(seriesDoc.id);
+            return {
+              id: seriesDoc.id,
+              ...seriesData,
+              editions,
+              createdAt: seriesData.createdAt instanceof Timestamp
+                ? seriesData.createdAt.toDate().toISOString()
+                : new Date().toISOString(),
+            } as NumberedProduct;
+          })
+        );
 
         // Deduplicate by SKU — keep the first (most recent by createdAt desc)
         const seenSkus = new Set<string>();

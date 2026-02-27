@@ -95,12 +95,12 @@ export function useNumberedEditions(): UseNumberedEditionsReturn {
     let unsubscribe: (() => void) | undefined;
     let timeoutId: NodeJS.Timeout | undefined;
 
-    // Safety timeout - if loading takes > 10 seconds, something is wrong
+    // Safety timeout - if loading takes > 30 seconds, something is wrong
     timeoutId = setTimeout(() => {
-      console.error('❌ [HOOK] Subscription timeout after 10 seconds');
+      console.error('❌ [HOOK] Subscription timeout after 30 seconds');
       setLoading(false);
       setError('Timeout loading series data. Please refresh the page.');
-    }, 10000);
+    }, 30000);
 
     try {
       unsubscribe = editionsService.subscribeToAllSeries((data) => {
