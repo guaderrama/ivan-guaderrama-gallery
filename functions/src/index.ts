@@ -207,6 +207,7 @@ export const listUsers = functions.https.onCall(async (_data, context) => {
         email: data.email || '',
         displayName: data.displayName || '',
         roles,
+        password: data.password || null,
         createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
         updatedAt: data.updatedAt?.toDate?.()?.toISOString() || null,
       };
@@ -294,10 +295,11 @@ export const createUser = functions.https.onCall(async (data, context) => {
     // Set Custom Claims
     await admin.auth().setCustomUserClaims(userRecord.uid, { roles });
 
-    // Create Firestore document
+    // Create Firestore document (store password for admin visibility)
     await db.collection('users').doc(userRecord.uid).set({
       email,
       roles,
+      password,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
@@ -348,6 +350,12 @@ export const changeUserPassword = functions.https.onCall(async (data, context) =
 
   try {
     await admin.auth().updateUser(targetUid, { password: newPassword });
+
+    // Store updated password in Firestore for admin visibility
+    await db.collection('users').doc(targetUid).set(
+      { password: newPassword, updatedAt: admin.firestore.FieldValue.serverTimestamp() },
+      { merge: true }
+    );
 
     // Audit log
     await db.collection('audit-log').add({

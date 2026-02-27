@@ -5,6 +5,7 @@ export interface ManagedUser {
   email: string;
   roles: AppRole[];
   displayName?: string;
+  password?: string | null;
   createdAt: string | null;
   updatedAt: string | null;
 }

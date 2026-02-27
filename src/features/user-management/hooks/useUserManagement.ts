@@ -10,6 +10,7 @@ interface ListUsersResponse {
     email: string;
     displayName: string;
     roles: string[];
+    password: string | null;
     createdAt: string | null;
     updatedAt: string | null;
   }>;
@@ -34,6 +35,7 @@ export function useUserManagement() {
         email: u.email,
         displayName: u.displayName || undefined,
         roles: (u.roles || []) as AppRole[],
+        password: u.password || null,
         createdAt: u.createdAt,
         updatedAt: u.updatedAt,
       }));
@@ -67,6 +69,8 @@ export function useUserManagement() {
     try {
       const changePasswordFn = httpsCallable<{ targetUid: string; newPassword: string }, { success: boolean }>(functions, 'changeUserPassword');
       await changePasswordFn({ targetUid, newPassword });
+      // Update local state with new password
+      setUsers(prev => prev.map(u => u.uid === targetUid ? { ...u, password: newPassword } : u));
     } catch (err: any) {
       const msg = err?.message || 'Error al cambiar contraseña';
       setError(msg);
@@ -85,6 +89,7 @@ export function useUserManagement() {
         uid: result.data.uid,
         email,
         roles,
+        password,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
