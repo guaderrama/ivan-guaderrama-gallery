@@ -178,8 +178,19 @@ export const editionsService = {
         } as NumberedProduct);
       }
 
-      console.log(`📚 [SERIES] Returning ${seriesList.length} active series`);
-      return seriesList;
+      // Deduplicate by SKU — keep the first (most recent by createdAt desc)
+      const seenSkus = new Set<string>();
+      const dedupedList = seriesList.filter(s => {
+        if (seenSkus.has(s.sku)) {
+          console.log(`⚠️ [SERIES] Skipping duplicate SKU: ${s.sku} (id: ${s.id})`);
+          return false;
+        }
+        seenSkus.add(s.sku);
+        return true;
+      });
+
+      console.log(`📚 [SERIES] Returning ${dedupedList.length} active series (${seriesList.length - dedupedList.length} duplicates removed)`);
+      return dedupedList;
     } catch (error) {
       console.error('❌ [SERIES] Error getting all series:', error);
       throw new Error('Failed to fetch series');
@@ -226,8 +237,19 @@ export const editionsService = {
           } as NumberedProduct);
         }
 
-        console.log(`✅ [SERIES] Callback with ${seriesList.length} series total`);
-        callback(seriesList);
+        // Deduplicate by SKU — keep the first (most recent by createdAt desc)
+        const seenSkus = new Set<string>();
+        const dedupedList = seriesList.filter(s => {
+          if (seenSkus.has(s.sku)) {
+            console.log(`⚠️ [SERIES] Skipping duplicate SKU: ${s.sku} (id: ${s.id})`);
+            return false;
+          }
+          seenSkus.add(s.sku);
+          return true;
+        });
+
+        console.log(`✅ [SERIES] Callback with ${dedupedList.length} series total (${seriesList.length - dedupedList.length} duplicates removed)`);
+        callback(dedupedList);
       },
       (error) => {
         console.error('❌ [SERIES] Error in series subscription:', error);
