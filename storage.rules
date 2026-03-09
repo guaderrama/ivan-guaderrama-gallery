@@ -39,6 +39,12 @@ service firebase.storage {
       allow write: if canWriteEditions();
     }
 
+    // ─── Albums images ───────────────────────────────────
+    match /albums/{allPaths=**} {
+      allow read: if true;
+      allow write: if canWriteCatalog();
+    }
+
     // ─── Temporary uploads ────────────────────────────────
     match /temp/{userId}/{allPaths=**} {
       allow read, write: if isAuthenticated() && request.auth.uid == userId;

@@ -16,6 +16,8 @@ export const PERMISSIONS = [
   'courses:read',
   'courses:write',
   'users:manage',
+  'albums:read',
+  'albums:write',
 ] as const;
 export type Permission = typeof PERMISSIONS[number];
 
@@ -26,23 +28,28 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
     'catalog:read', 'catalog:write',
     'editions:read', 'editions:write',
     'simulator:access',
+    'albums:read', 'albums:write',
   ],
   editor_seriadas: [
     'editions:read', 'editions:write',
     'simulator:access',
+    'albums:read',
   ],
   gestor_crm: [
     'crm:read', 'crm:write',
     'simulator:access',
+    'albums:read',
   ],
   gestor_cursos: [
     'courses:read', 'courses:write',
     'simulator:access',
+    'albums:read',
   ],
   visualizador: [
     'catalog:read',
     'editions:read',
     'simulator:access',
+    'albums:read',
   ],
 } as const;
 

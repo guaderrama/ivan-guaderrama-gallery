@@ -42,8 +42,12 @@ export function calculateNewShippingCosts({ price, dimensionsStr, settings }: Ca
   const netValue = price / settings.divisorIVA;
   const insuranceCost = netValue * settings.tasaSeguro;
 
-  const usaCost = (volumetricWeight * settings.costoPorKiloUSA) + settings.costoGuiaUSA + insuranceCost;
-  const canadaCost = (volumetricWeight * settings.costoPorKiloCanada) + settings.costoGuiaCanada + insuranceCost;
+  const usaSubtotal = (volumetricWeight * settings.costoPorKiloUSA) + settings.costoGuiaUSA + insuranceCost;
+  const canadaSubtotal = (volumetricWeight * settings.costoPorKiloCanada) + settings.costoGuiaCanada + insuranceCost;
+
+  // Apply IVA to final shipping cost
+  const usaCost = usaSubtotal * settings.divisorIVA;
+  const canadaCost = canadaSubtotal * settings.divisorIVA;
 
   return {
     usaCost: Math.round(usaCost * 100) / 100, // Round to 2 decimal places

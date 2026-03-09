@@ -15,6 +15,7 @@ import { useArtworks } from '@/features/artwork-management/hooks/useArtworks';
 import { useNumberedEditions } from '@/features/numbered-editions/hooks/useNumberedEditions';
 import CoursesManager from '@/features/courses/components/CoursesManager';
 import { RelationshipsManager } from '@/features/relationships/components';
+import { AlbumsManager } from '@/features/albums/components';
 
 // Lazy load heavy components
 const ArtworkSimulator = lazy(() => import('@/features/artwork-simulator/components/ArtworkSimulator'));
@@ -30,7 +31,7 @@ const initialShippingSettings: ShippingSettings = {
   divisorVolumetrico: 5000,
 };
 
-type ActiveTab = 'catalog' | 'seriadas' | 'simulator' | 'courses' | 'relationships';
+type ActiveTab = 'catalog' | 'seriadas' | 'simulator' | 'courses' | 'relationships' | 'albums';
 
 // Tab definition with permission requirement
 interface TabDef {
@@ -45,6 +46,7 @@ const ALL_TABS: TabDef[] = [
   { name: 'simulator', label: 'Simulador', permission: 'simulator:access' },
   { name: 'courses', label: 'Cursos', permission: 'courses:read' },
   { name: 'relationships', label: 'Relaciones', permission: 'crm:read' },
+  { name: 'albums', label: 'Álbumes', permission: 'albums:read' },
 ];
 
 // TabButton component for consistent tab styling
@@ -587,6 +589,11 @@ const App: React.FC = () => {
         }>
           <ArtworkSimulator />
         </Suspense>
+      )}
+
+      {/* Albums Tab */}
+      {activeTab === 'albums' && (
+        <AlbumsManager canWrite={hasPermission('albums:write')} />
       )}
 
       {/* Modals */}
