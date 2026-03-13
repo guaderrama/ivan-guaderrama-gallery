@@ -46,12 +46,12 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
     setError(null);
 
     if (!formData.name.trim()) {
-      setError('El nombre es obligatorio');
+      setError('Name is required');
       return;
     }
 
     if (!formData.emotionalNote.trim()) {
-      setError('La nota emocional es importante para recordar la conexión');
+      setError('The emotional note is important to remember the connection');
       return;
     }
 
@@ -74,7 +74,7 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
       });
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error al guardar');
+      setError(err instanceof Error ? err.message : 'Error saving');
     } finally {
       setIsSaving(false);
     }
@@ -104,8 +104,8 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
           {/* Header */}
           <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Registrar Cliente</h2>
-              <p className="text-sm text-gray-500">Captura la esencia de la visita</p>
+              <h2 className="text-2xl font-bold text-gray-900">Register Client</h2>
+              <p className="text-sm text-gray-500">Capture the essence of the visit</p>
             </div>
             <button
               type="button"
@@ -130,18 +130,18 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-1">
-                  Nombre <span className="text-red-500">*</span>
+                  Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder="Nombre del cliente"
+                  placeholder="Client name"
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Teléfono</label>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Phone</label>
                 <input
                   type="tel"
                   value={formData.phone}
@@ -157,28 +157,28 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder="cliente@email.com"
+                  placeholder="client@email.com"
                 />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Ciudad</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">City</label>
                   <input
                     type="text"
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                    placeholder="Ciudad"
+                    placeholder="City"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">País</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Country</label>
                   <input
                     type="text"
                     value={formData.country}
                     onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                    placeholder="País"
+                    placeholder="Country"
                   />
                 </div>
               </div>
@@ -186,7 +186,7 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
 
             {/* Etapa inicial */}
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Etapa Inicial</label>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Initial Stage</label>
               <div className="flex flex-wrap gap-2">
                 {PIPELINE_STAGES.slice(0, 4).map(stage => (
                   <button
@@ -208,40 +208,40 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
             {/* Nota emocional */}
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1">
-                Nota Emocional <span className="text-red-500">*</span>
+                Emotional Note <span className="text-red-500">*</span>
               </label>
               <p className="text-xs text-gray-500 mb-2">
-                ¿Por qué conectó con la obra? ¿Qué le recordó? Este detalle te ayudará a retomar la charla.
+                Why did they connect with the artwork? What did it remind them of? This detail will help you resume the conversation.
               </p>
               <textarea
                 value={formData.emotionalNote}
                 onChange={(e) => setFormData({ ...formData, emotionalNote: e.target.value })}
                 rows={3}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                placeholder="Ej: Le recordó a su infancia en el campo, cuando visitaba a su abuela..."
+                placeholder="E.g.: It reminded them of their childhood in the countryside, visiting their grandmother..."
               />
             </div>
 
             {/* Compromiso de seguimiento */}
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 space-y-4">
-              <h3 className="font-bold text-yellow-800">📅 Compromiso de Seguimiento</h3>
+              <h3 className="font-bold text-yellow-800">📅 Follow-up Commitment</h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Próxima Acción</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Next Action</label>
                   <select
                     value={formData.nextAction || ''}
                     onChange={(e) => setFormData({ ...formData, nextAction: e.target.value as ActionType || undefined })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   >
-                    <option value="">Seleccionar...</option>
+                    <option value="">Select...</option>
                     {Object.entries(ACTION_LABELS).map(([key, label]) => (
                       <option key={key} value={key}>{label}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Fecha</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Date</label>
                   <input
                     type="date"
                     value={formData.nextActionDate ? formData.nextActionDate.toISOString().split('T')[0] : ''}
@@ -252,20 +252,20 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Descripción</label>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Description</label>
                 <input
                   type="text"
                   value={formData.nextActionDescription}
                   onChange={(e) => setFormData({ ...formData, nextActionDescription: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder="Ej: Enviar video de la obra con luz natural"
+                  placeholder="E.g.: Send video of the artwork with natural light"
                 />
               </div>
             </div>
 
             {/* Obras de interés */}
             <div>
-              <h3 className="font-bold text-gray-700 mb-2">🎨 Obras de Interés</h3>
+              <h3 className="font-bold text-gray-700 mb-2">🎨 Artworks of Interest</h3>
 
               {/* Filtro por categoría */}
               <div className="flex flex-wrap gap-2 mb-3">
@@ -280,7 +280,7 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
-                    {cat === 'ALL' ? 'Todas' : cat}
+                    {cat === 'ALL' ? 'All' : cat}
                   </button>
                 ))}
               </div>
@@ -308,7 +308,7 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
                         />
                       ) : (
                         <div className="w-full aspect-square bg-gray-200 rounded flex items-center justify-center text-xs text-gray-400">
-                          Sin imagen
+                          No image
                         </div>
                       )}
                       <p className="text-xs mt-1 truncate">{artwork.nombre}</p>
@@ -326,7 +326,7 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
 
               {formData.interestedArtworks.length > 0 && (
                 <p className="text-sm text-gray-500 mt-2">
-                  {formData.interestedArtworks.length} obra(s) seleccionada(s)
+                  {formData.interestedArtworks.length} artwork(s) selected
                 </p>
               )}
             </div>
@@ -339,14 +339,14 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
               onClick={onClose}
               className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              Cancelar
+              Cancel
             </button>
             <button
               type="submit"
               disabled={isSaving}
               className="px-6 py-2.5 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
             >
-              {isSaving ? 'Guardando...' : 'Guardar Cliente'}
+              {isSaving ? 'Saving...' : 'Save Client'}
             </button>
           </div>
         </form>

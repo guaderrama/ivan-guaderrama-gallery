@@ -31,7 +31,7 @@ export const RelationshipsManager: React.FC<RelationshipsManagerProps> = ({ avai
 
   const filteredRelationships = searchTerm ? searchRelationships(searchTerm) : relationships;
 
-  // Vista: Ritual Diario
+  // View: Daily Ritual
   const renderRitualDiario = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -39,19 +39,19 @@ export const RelationshipsManager: React.FC<RelationshipsManagerProps> = ({ avai
     return (
       <div className="space-y-4">
         <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-lg p-6 mb-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-2">Tu Ritual Diario</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Your Daily Ritual</h3>
           <p className="text-gray-600">
             {ritualDiario.length === 0
-              ? '¡Excelente! No tienes tareas pendientes para hoy. 🎉'
-              : `Tienes ${ritualDiario.length} contacto${ritualDiario.length > 1 ? 's' : ''} esperando tu atención.`}
+              ? 'Excellent! You have no pending tasks for today. 🎉'
+              : `You have ${ritualDiario.length} contact${ritualDiario.length > 1 ? 's' : ''} waiting for your attention.`}
           </p>
         </div>
 
         {ritualDiario.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
             <div className="text-6xl mb-4">☀️</div>
-            <p className="text-lg">Tu lista está limpia. ¡Buen trabajo!</p>
-            <p className="text-sm mt-2">Dedica este tiempo a conectar con nuevos interesados.</p>
+            <p className="text-lg">Your list is clean. Great job!</p>
+            <p className="text-sm mt-2">Use this time to connect with new prospects.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -78,7 +78,7 @@ export const RelationshipsManager: React.FC<RelationshipsManagerProps> = ({ avai
                     </div>
                     <div className="text-right ml-4">
                       <p className={`text-sm font-medium ${isOverdue ? 'text-red-600' : 'text-yellow-600'}`}>
-                        {isOverdue ? '⚠️ Vencido' : '📅 Hoy'}
+                        {isOverdue ? '⚠️ Overdue' : '📅 Today'}
                       </p>
                       {client.nextAction && (
                         <p className="text-xs text-gray-500 mt-1">
@@ -101,7 +101,7 @@ export const RelationshipsManager: React.FC<RelationshipsManagerProps> = ({ avai
     );
   };
 
-  // Vista: Pipeline (Kanban)
+  // View: Pipeline (Kanban)
   const renderPipeline = () => {
     return (
       <div className="overflow-x-auto pb-4">
@@ -153,7 +153,7 @@ export const RelationshipsManager: React.FC<RelationshipsManagerProps> = ({ avai
                 ))}
                 {pipelineGroups[stage].length === 0 && (
                   <div className="text-center py-8 text-gray-400 text-sm">
-                    Sin contactos
+                    No contacts
                   </div>
                 )}
               </div>
@@ -164,7 +164,7 @@ export const RelationshipsManager: React.FC<RelationshipsManagerProps> = ({ avai
     );
   };
 
-  // Vista: Directorio
+  // View: Directory
   const renderDirectory = () => {
     const displayedClients = searchTerm ? filteredRelationships : relationships;
 
@@ -173,7 +173,7 @@ export const RelationshipsManager: React.FC<RelationshipsManagerProps> = ({ avai
         <div className="relative">
           <input
             type="text"
-            placeholder="Buscar por nombre, ciudad o nota emocional..."
+            placeholder="Search by name, city or emotional note..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
@@ -185,7 +185,7 @@ export const RelationshipsManager: React.FC<RelationshipsManagerProps> = ({ avai
 
         {displayedClients.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
-            <p>No se encontraron contactos</p>
+            <p>No contacts found</p>
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -214,8 +214,8 @@ export const RelationshipsManager: React.FC<RelationshipsManagerProps> = ({ avai
                 )}
                 <p className="text-sm text-gray-600 mt-2 italic line-clamp-2">"{client.emotionalNote}"</p>
                 <div className="mt-3 pt-3 border-t flex justify-between items-center text-xs text-gray-400">
-                  <span>{client.interestedArtworks.length} obra(s) de interés</span>
-                  <span>{client.interactions.length} interacciones</span>
+                  <span>{client.interestedArtworks.length} artwork(s) of interest</span>
+                  <span>{client.interactions.length} interactions</span>
                 </div>
               </div>
             ))}
@@ -230,7 +230,7 @@ export const RelationshipsManager: React.FC<RelationshipsManagerProps> = ({ avai
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mb-4"></div>
-          <p className="text-gray-600">Cargando relaciones...</p>
+          <p className="text-gray-600">Loading relationships...</p>
         </div>
       </div>
     );
@@ -239,14 +239,14 @@ export const RelationshipsManager: React.FC<RelationshipsManagerProps> = ({ avai
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-        <p className="text-red-600">Error al cargar: {error}</p>
+        <p className="text-red-600">Error loading: {error}</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header con selector de vista y botón de agregar */}
+      {/* Header with view selector and add button */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex bg-gray-100 rounded-lg p-1">
           <button
@@ -257,7 +257,7 @@ export const RelationshipsManager: React.FC<RelationshipsManagerProps> = ({ avai
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            ☀️ Ritual Diario
+            ☀️ Daily Ritual
             {ritualDiario.length > 0 && (
               <span className="ml-2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
                 {ritualDiario.length}
@@ -282,7 +282,7 @@ export const RelationshipsManager: React.FC<RelationshipsManagerProps> = ({ avai
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            📖 Directorio
+            📖 Directory
           </button>
         </div>
 
@@ -293,38 +293,38 @@ export const RelationshipsManager: React.FC<RelationshipsManagerProps> = ({ avai
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
           </svg>
-          Registrar Cliente
+          Register Client
         </button>
       </div>
 
-      {/* Estadísticas rápidas */}
+      {/* Quick stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-blue-50 rounded-lg p-4 text-center">
           <p className="text-2xl font-bold text-blue-600">{relationships.length}</p>
-          <p className="text-sm text-blue-800">Total Contactos</p>
+          <p className="text-sm text-blue-800">Total Contacts</p>
         </div>
         <div className="bg-yellow-50 rounded-lg p-4 text-center">
           <p className="text-2xl font-bold text-yellow-600">{ritualDiario.length}</p>
-          <p className="text-sm text-yellow-800">Pendientes Hoy</p>
+          <p className="text-sm text-yellow-800">Pending Today</p>
         </div>
         <div className="bg-green-50 rounded-lg p-4 text-center">
           <p className="text-2xl font-bold text-green-600">{pipelineGroups.venta_realizada.length}</p>
-          <p className="text-sm text-green-800">Ventas</p>
+          <p className="text-sm text-green-800">Sales</p>
         </div>
         <div className="bg-purple-50 rounded-lg p-4 text-center">
           <p className="text-2xl font-bold text-purple-600">
             {pipelineGroups.conexion_emocional.length + pipelineGroups.seguimiento_activo.length}
           </p>
-          <p className="text-sm text-purple-800">En Proceso</p>
+          <p className="text-sm text-purple-800">In Progress</p>
         </div>
       </div>
 
-      {/* Vista activa */}
+      {/* Active view */}
       {activeView === 'ritual' && renderRitualDiario()}
       {activeView === 'pipeline' && renderPipeline()}
       {activeView === 'directory' && renderDirectory()}
 
-      {/* Modal de agregar cliente */}
+      {/* Add client modal */}
       <AddClientModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
@@ -332,7 +332,7 @@ export const RelationshipsManager: React.FC<RelationshipsManagerProps> = ({ avai
         availableArtworks={availableArtworks}
       />
 
-      {/* Modal de detalle de cliente */}
+      {/* Client detail modal */}
       {selectedClient && (
         <ClientDetailModal
           client={selectedClient}

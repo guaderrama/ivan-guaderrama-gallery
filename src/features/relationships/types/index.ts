@@ -11,12 +11,12 @@ export const PIPELINE_STAGES = [
 export type PipelineStage = typeof PIPELINE_STAGES[number];
 
 export const STAGE_LABELS: Record<PipelineStage, string> = {
-  interes_nuevo: 'Interés Nuevo',
-  conexion_emocional: 'Conexión Emocional',
-  seguimiento_activo: 'Seguimiento Activo',
-  obra_apartada: 'Obra Apartada',
-  venta_realizada: 'Venta Realizada',
-  post_venta: 'Post-Venta'
+  interes_nuevo: 'New Interest',
+  conexion_emocional: 'Emotional Connection',
+  seguimiento_activo: 'Active Follow-up',
+  obra_apartada: 'Reserved Artwork',
+  venta_realizada: 'Sale Completed',
+  post_venta: 'Post-Sale'
 };
 
 export const STAGE_COLORS: Record<PipelineStage, string> = {
@@ -40,14 +40,14 @@ export type ActionType =
   | 'otro';
 
 export const ACTION_LABELS: Record<ActionType, string> = {
-  llamar: 'Llamar',
-  enviar_fotos: 'Enviar fotos',
-  enviar_cotizacion: 'Enviar cotización',
-  enviar_video: 'Enviar video',
-  visita_galeria: 'Invitar a galería',
-  confirmar_entrega: 'Confirmar entrega',
-  agradecer: 'Agradecer',
-  otro: 'Otro'
+  llamar: 'Call',
+  enviar_fotos: 'Send photos',
+  enviar_cotizacion: 'Send quote',
+  enviar_video: 'Send video',
+  visita_galeria: 'Invite to gallery',
+  confirmar_entrega: 'Confirm delivery',
+  agradecer: 'Thank',
+  otro: 'Other'
 };
 
 // Obra de interés vinculada

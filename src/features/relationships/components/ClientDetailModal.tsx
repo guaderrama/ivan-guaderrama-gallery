@@ -25,11 +25,9 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'info' | 'history' | 'artworks'>('info');
 
-  // Estado para nueva interacción
   const [newNote, setNewNote] = useState('');
   const [newAction, setNewAction] = useState('');
 
-  // Estado para edición
   const [editData, setEditData] = useState({
     name: client.name,
     email: client.email || '',
@@ -81,7 +79,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
   };
 
   const handleDelete = async () => {
-    if (!confirm('¿Estás seguro de eliminar este contacto? Esta acción no se puede deshacer.')) return;
+    if (!confirm('Are you sure you want to delete this contact? This action cannot be undone.')) return;
 
     setIsSaving(true);
     try {
@@ -147,7 +145,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Información
+            Information
           </button>
           <button
             onClick={() => setActiveTab('history')}
@@ -157,7 +155,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Historial ({client.interactions.length})
+            History ({client.interactions.length})
           </button>
           <button
             onClick={() => setActiveTab('artworks')}
@@ -167,18 +165,18 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Obras ({client.interestedArtworks.length})
+            Artworks ({client.interestedArtworks.length})
           </button>
         </div>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          {/* Tab: Información */}
+          {/* Tab: Information */}
           {activeTab === 'info' && (
             <div className="space-y-6">
-              {/* Nota emocional destacada */}
+              {/* Emotional note */}
               <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4">
-                <h3 className="font-bold text-purple-800 mb-2">💜 Nota Emocional</h3>
+                <h3 className="font-bold text-purple-800 mb-2">💜 Emotional Note</h3>
                 {isEditing ? (
                   <textarea
                     value={editData.emotionalNote}
@@ -191,7 +189,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                 )}
               </div>
 
-              {/* Datos de contacto */}
+              {/* Contact info */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-bold text-gray-500 uppercase">Email</label>
@@ -207,7 +205,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                   )}
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-gray-500 uppercase">Teléfono</label>
+                  <label className="text-xs font-bold text-gray-500 uppercase">Phone</label>
                   {isEditing ? (
                     <input
                       type="tel"
@@ -221,9 +219,9 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                 </div>
               </div>
 
-              {/* Próxima acción */}
+              {/* Next action */}
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <h3 className="font-bold text-yellow-800 mb-3">📅 Próximo Seguimiento</h3>
+                <h3 className="font-bold text-yellow-800 mb-3">📅 Next Follow-up</h3>
                 {isEditing ? (
                   <div className="space-y-3">
                     <select
@@ -231,7 +229,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                       onChange={(e) => setEditData({ ...editData, nextAction: e.target.value as ActionType || undefined })}
                       className="w-full px-3 py-2 border rounded-lg"
                     >
-                      <option value="">Seleccionar acción...</option>
+                      <option value="">Select action...</option>
                       {Object.entries(ACTION_LABELS).map(([key, label]) => (
                         <option key={key} value={key}>{label}</option>
                       ))}
@@ -240,7 +238,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                       type="text"
                       value={editData.nextActionDescription}
                       onChange={(e) => setEditData({ ...editData, nextActionDescription: e.target.value })}
-                      placeholder="Descripción"
+                      placeholder="Description"
                       className="w-full px-3 py-2 border rounded-lg"
                     />
                     <input
@@ -260,18 +258,18 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                         )}
                         {client.nextActionDate && (
                           <p className="text-sm text-yellow-700">
-                            📆 {client.nextActionDate.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                            📆 {client.nextActionDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                           </p>
                         )}
                       </div>
                     ) : (
-                      <p className="text-gray-500 italic">Sin seguimiento programado</p>
+                      <p className="text-gray-500 italic">No follow-up scheduled</p>
                     )}
                   </>
                 )}
               </div>
 
-              {/* Botones de edición */}
+              {/* Edit buttons */}
               <div className="flex justify-between">
                 {isEditing ? (
                   <div className="flex gap-2">
@@ -279,14 +277,14 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                       onClick={() => setIsEditing(false)}
                       className="px-4 py-2 border rounded-lg hover:bg-gray-50"
                     >
-                      Cancelar
+                      Cancel
                     </button>
                     <button
                       onClick={handleSaveEdit}
                       disabled={isSaving}
                       className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
                     >
-                      {isSaving ? 'Guardando...' : 'Guardar'}
+                      {isSaving ? 'Saving...' : 'Save'}
                     </button>
                   </div>
                 ) : (
@@ -294,29 +292,29 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                     onClick={() => setIsEditing(true)}
                     className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                   >
-                    ✏️ Editar
+                    ✏️ Edit
                   </button>
                 )}
                 <button
                   onClick={handleDelete}
                   className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg"
                 >
-                  🗑️ Eliminar
+                  🗑️ Delete
                 </button>
               </div>
             </div>
           )}
 
-          {/* Tab: Historial */}
+          {/* Tab: History */}
           {activeTab === 'history' && (
             <div className="space-y-4">
-              {/* Agregar nueva interacción */}
+              {/* Add new interaction */}
               <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                <h3 className="font-bold text-gray-700">Registrar Interacción</h3>
+                <h3 className="font-bold text-gray-700">Log Interaction</h3>
                 <textarea
                   value={newNote}
                   onChange={(e) => setNewNote(e.target.value)}
-                  placeholder="¿Qué pasó en esta interacción?"
+                  placeholder="What happened in this interaction?"
                   rows={2}
                   className="w-full px-3 py-2 border rounded-lg"
                 />
@@ -325,7 +323,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                     type="text"
                     value={newAction}
                     onChange={(e) => setNewAction(e.target.value)}
-                    placeholder="Acción realizada (ej: Llamada, Email...)"
+                    placeholder="Action taken (e.g.: Call, Email...)"
                     className="flex-1 px-3 py-2 border rounded-lg"
                   />
                   <button
@@ -333,15 +331,15 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                     disabled={isSaving || !newNote.trim()}
                     className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
                   >
-                    Guardar
+                    Save
                   </button>
                 </div>
               </div>
 
-              {/* Lista de interacciones */}
+              {/* Interactions list */}
               {client.interactions.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  <p>No hay interacciones registradas</p>
+                  <p>No interactions recorded</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -365,12 +363,12 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
             </div>
           )}
 
-          {/* Tab: Obras */}
+          {/* Tab: Artworks */}
           {activeTab === 'artworks' && (
             <div>
               {client.interestedArtworks.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  <p>No hay obras de interés registradas</p>
+                  <p>No artworks of interest recorded</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -384,7 +382,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                         />
                       ) : (
                         <div className="w-full aspect-square bg-gray-200 flex items-center justify-center text-gray-400">
-                          Sin imagen
+                          No image
                         </div>
                       )}
                       <div className="p-2">
@@ -400,10 +398,10 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
           )}
         </div>
 
-        {/* Footer con info */}
+        {/* Footer */}
         <div className="border-t px-6 py-3 bg-gray-50 text-xs text-gray-500 flex justify-between">
-          <span>Creado: {client.createdAt.toLocaleDateString()}</span>
-          <span>Actualizado: {client.updatedAt.toLocaleDateString()}</span>
+          <span>Created: {client.createdAt.toLocaleDateString()}</span>
+          <span>Updated: {client.updatedAt.toLocaleDateString()}</span>
         </div>
       </div>
     </div>
