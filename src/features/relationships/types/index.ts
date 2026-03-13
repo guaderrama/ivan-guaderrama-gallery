@@ -5,7 +5,8 @@ export const PIPELINE_STAGES = [
   'seguimiento_activo',
   'obra_apartada',
   'venta_realizada',
-  'post_venta'
+  'post_venta',
+  'completado'
 ] as const;
 
 export type PipelineStage = typeof PIPELINE_STAGES[number];
@@ -16,7 +17,8 @@ export const STAGE_LABELS: Record<PipelineStage, string> = {
   seguimiento_activo: 'Active Follow-up',
   obra_apartada: 'Reserved Artwork',
   venta_realizada: 'Sale Completed',
-  post_venta: 'Post-Sale'
+  post_venta: 'Post-Sale',
+  completado: 'Completed'
 };
 
 export const STAGE_COLORS: Record<PipelineStage, string> = {
@@ -25,7 +27,8 @@ export const STAGE_COLORS: Record<PipelineStage, string> = {
   seguimiento_activo: 'bg-yellow-100 text-yellow-800 border-yellow-300',
   obra_apartada: 'bg-orange-100 text-orange-800 border-orange-300',
   venta_realizada: 'bg-green-100 text-green-800 border-green-300',
-  post_venta: 'bg-teal-100 text-teal-800 border-teal-300'
+  post_venta: 'bg-teal-100 text-teal-800 border-teal-300',
+  completado: 'bg-gray-100 text-gray-800 border-gray-300'
 };
 
 // Tipos de acción de seguimiento

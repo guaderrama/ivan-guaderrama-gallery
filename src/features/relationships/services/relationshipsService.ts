@@ -228,7 +228,8 @@ export const groupByStage = (relationships: Relationship[]): Record<PipelineStag
     seguimiento_activo: [],
     obra_apartada: [],
     venta_realizada: [],
-    post_venta: []
+    post_venta: [],
+    completado: []
   };
 
   relationships.forEach(r => {
