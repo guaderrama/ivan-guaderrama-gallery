@@ -34,6 +34,7 @@ const ArtworkSimulator: React.FC = () => {
     
     // Ref for canvas
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const bgImageRef = useRef<HTMLImageElement | null>(null);
     
     // State for artwork adjustments
     const [isDragging, setIsDragging] = useState(false);
@@ -166,59 +167,78 @@ const ArtworkSimulator: React.FC = () => {
         }));
     };
     
+    // Load background image when spaceImage changes
+    useEffect(() => {
+        if (!spaceImage) {
+            bgImageRef.current = null;
+            return;
+        }
+        const bg = new Image();
+        bg.src = spaceImage;
+        bg.onload = () => {
+            bgImageRef.current = bg;
+            // Trigger a re-render to draw
+            const canvas = canvasRef.current;
+            if (canvas) {
+                const container = canvas.parentElement;
+                if (container) {
+                    const containerWidth = container.clientWidth;
+                    const scale = containerWidth / bg.width;
+                    canvas.width = containerWidth;
+                    canvas.height = bg.height * scale;
+                }
+            }
+            // Force redraw by setting a dummy state
+            setRedrawTick(t => t + 1);
+        };
+    }, [spaceImage]);
+
+    const [redrawTick, setRedrawTick] = useState(0);
+
+    // Draw canvas synchronously using cached background
     useEffect(() => {
         const canvas = canvasRef.current;
         const ctx = canvas?.getContext('2d');
         if (!canvas || !ctx) return;
-        
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if(!spaceImage) return;
 
-        const bg = new Image();
-        bg.src = spaceImage;
-        bg.onload = () => {
-            const container = canvas.parentElement;
-            if (!container) return;
-            const containerWidth = container.clientWidth;
-            const scale = containerWidth / bg.width;
-            canvas.width = containerWidth;
-            canvas.height = bg.height * scale;
-            
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+        const bg = bgImageRef.current;
+        if (!bg) return;
 
-            artworks.forEach(art => {
-                ctx.save();
-                ctx.translate(art.x, art.y);
-                ctx.rotate(art.rotation * Math.PI / 180);
-                ctx.filter = `brightness(${art.brightness}%)`;
-                
-                const scaledWidth = art.width * art.scale;
-                const scaledHeight = art.height * art.scale;
-                
-                ctx.drawImage(art.img, -scaledWidth / 2, -scaledHeight / 2, scaledWidth, scaledHeight);
-                
-                if (art.id === selectedArtworkId) {
-                    ctx.setLineDash([6, 3]);
-                    ctx.strokeStyle = '#3b82f6';
-                    ctx.lineWidth = 2;
-                    ctx.filter = 'none'; 
-                    ctx.strokeRect(-scaledWidth / 2, -scaledHeight / 2, scaledWidth, scaledHeight);
-                    ctx.setLineDash([]);
-                    ctx.fillStyle = 'white';
-                    const handleRadius = HANDLE_SIZE / 2;
-                    const corners = [ { x: -scaledWidth / 2, y: -scaledHeight / 2 }, { x: scaledWidth / 2, y: -scaledHeight / 2 }, { x: scaledWidth / 2, y: scaledHeight / 2 }, { x: -scaledWidth / 2, y: scaledHeight / 2 } ];
-                    corners.forEach(corner => {
-                        ctx.beginPath();
-                        ctx.arc(corner.x, corner.y, handleRadius, 0, 2 * Math.PI);
-                        ctx.fill();
-                        ctx.stroke();
-                    });
-                }
-                ctx.restore();
-            });
-        };
-    }, [spaceImage, artworks, selectedArtworkId]);
+        ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+
+        artworks.forEach(art => {
+            ctx.save();
+            ctx.translate(art.x, art.y);
+            ctx.rotate(art.rotation * Math.PI / 180);
+            ctx.filter = `brightness(${art.brightness}%)`;
+
+            const scaledWidth = art.width * art.scale;
+            const scaledHeight = art.height * art.scale;
+
+            ctx.drawImage(art.img, -scaledWidth / 2, -scaledHeight / 2, scaledWidth, scaledHeight);
+
+            if (art.id === selectedArtworkId) {
+                ctx.setLineDash([6, 3]);
+                ctx.strokeStyle = '#3b82f6';
+                ctx.lineWidth = 2;
+                ctx.filter = 'none';
+                ctx.strokeRect(-scaledWidth / 2, -scaledHeight / 2, scaledWidth, scaledHeight);
+                ctx.setLineDash([]);
+                ctx.fillStyle = 'white';
+                const handleRadius = HANDLE_SIZE / 2;
+                const corners = [ { x: -scaledWidth / 2, y: -scaledHeight / 2 }, { x: scaledWidth / 2, y: -scaledHeight / 2 }, { x: scaledWidth / 2, y: scaledHeight / 2 }, { x: -scaledWidth / 2, y: scaledHeight / 2 } ];
+                corners.forEach(corner => {
+                    ctx.beginPath();
+                    ctx.arc(corner.x, corner.y, handleRadius, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.stroke();
+                });
+            }
+            ctx.restore();
+        });
+    }, [artworks, selectedArtworkId, redrawTick]);
 
     const getCanvasCoords = (e: React.MouseEvent) => {
         const canvas = canvasRef.current;
