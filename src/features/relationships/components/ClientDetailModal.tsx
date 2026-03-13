@@ -252,15 +252,41 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                   <>
                     {client.nextAction ? (
                       <div className="space-y-2">
-                        <p className="font-medium">{ACTION_LABELS[client.nextAction]}</p>
-                        {client.nextActionDescription && (
-                          <p className="text-sm text-gray-600">{client.nextActionDescription}</p>
-                        )}
-                        {client.nextActionDate && (
-                          <p className="text-sm text-yellow-700">
-                            📆 {client.nextActionDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                          </p>
-                        )}
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium">{ACTION_LABELS[client.nextAction]}</p>
+                            {client.nextActionDescription && (
+                              <p className="text-sm text-gray-600">{client.nextActionDescription}</p>
+                            )}
+                            {client.nextActionDate && (
+                              <p className="text-sm text-yellow-700">
+                                📆 {client.nextActionDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            onClick={async () => {
+                              setIsSaving(true);
+                              try {
+                                const note = `Completed: ${ACTION_LABELS[client.nextAction!]}${client.nextActionDescription ? ` - ${client.nextActionDescription}` : ''}`;
+                                await onLogInteraction(client.id, note, ACTION_LABELS[client.nextAction!]);
+                                await onUpdate(client.id, {
+                                  nextAction: undefined,
+                                  nextActionDescription: '',
+                                  nextActionDate: undefined
+                                });
+                              } catch (err) {
+                                console.error('Error completing follow-up:', err);
+                              } finally {
+                                setIsSaving(false);
+                              }
+                            }}
+                            disabled={isSaving}
+                            className="px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 whitespace-nowrap"
+                          >
+                            ✓ Done
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <p className="text-gray-500 italic">No follow-up scheduled</p>
