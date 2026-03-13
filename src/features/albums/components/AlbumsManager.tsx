@@ -3,6 +3,7 @@ import { useAlbums } from '../hooks/useAlbums';
 import { storageService } from '@/shared/services/storageService';
 import { PlusIcon, TrashIcon, SearchIcon } from '@/shared/components/Icons';
 import CreateAlbumModal from './CreateAlbumModal';
+import PhotoViewer from './PhotoViewer';
 import type { AlbumPhoto, NewAlbumData } from '../types';
 
 interface AlbumsManagerProps {
@@ -16,6 +17,7 @@ const AlbumsManager: React.FC<AlbumsManagerProps> = ({ canWrite }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filteredAlbums = useMemo(() => {
@@ -248,18 +250,23 @@ const AlbumsManager: React.FC<AlbumsManagerProps> = ({ canWrite }) => {
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {selectedAlbum.photos.map((photo) => (
-                      <div key={photo.id} className="group relative aspect-square rounded-lg overflow-hidden bg-gray-100">
+                    {selectedAlbum.photos.map((photo, index) => (
+                      <div
+                        key={photo.id}
+                        className="group relative aspect-square rounded-lg overflow-hidden bg-gray-100 cursor-pointer"
+                        onClick={() => setViewerIndex(index)}
+                      >
                         <img
                           src={photo.url}
                           alt={photo.fileName}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
                           loading="lazy"
                         />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                         {canWrite && (
                           <button
-                            onClick={() => handleRemovePhoto(photo)}
-                            className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                            onClick={(e) => { e.stopPropagation(); handleRemovePhoto(photo); }}
+                            className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10"
                             title="Eliminar foto"
                           >
                             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -297,6 +304,14 @@ const AlbumsManager: React.FC<AlbumsManagerProps> = ({ canWrite }) => {
         onClose={() => setIsCreateModalOpen(false)}
         onSave={handleCreateAlbum}
       />
+
+      {viewerIndex !== null && selectedAlbum && (
+        <PhotoViewer
+          photos={selectedAlbum.photos}
+          initialIndex={viewerIndex}
+          onClose={() => setViewerIndex(null)}
+        />
+      )}
     </div>
   );
 };
