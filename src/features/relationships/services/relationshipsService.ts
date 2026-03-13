@@ -4,6 +4,7 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
+  deleteField,
   onSnapshot,
   query,
   orderBy,
@@ -98,9 +99,18 @@ export const updateRelationship = async (
     updatedAt: Timestamp.now()
   };
 
+  // Replace undefined values with deleteField() for Firestore
+  for (const key of Object.keys(updateData)) {
+    if (updateData[key] === undefined) {
+      updateData[key] = deleteField();
+    }
+  }
+
   // Convertir fechas a Timestamp
   if (updates.nextActionDate) {
     updateData.nextActionDate = Timestamp.fromDate(updates.nextActionDate);
+  } else if (updates.nextActionDate === undefined && 'nextActionDate' in updates) {
+    updateData.nextActionDate = deleteField();
   }
   if (updates.saleDate) {
     updateData.saleDate = Timestamp.fromDate(updates.saleDate);
