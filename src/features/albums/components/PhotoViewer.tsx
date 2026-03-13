@@ -257,7 +257,7 @@ const PhotoViewer: React.FC<PhotoViewerProps> = ({ photos, initialIndex, onClose
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 z-[60] select-none touch-none"
+      className="fixed inset-0 z-[9999] select-none touch-none"
       style={{
         backgroundColor: `rgba(0,0,0,${dismissOpacity})`,
         transition: isAnimatingIn ? 'none' : 'background-color 0.2s ease',
