@@ -104,6 +104,10 @@ interface ClientDoc {
   updatedAt: Date | null;
   createdBy: string;
   createdByName: string;
+  dealValue: number;
+  source: string;
+  tags: string[];
+  lastContactedAt: Date | null;
 }
 
 function parseDoc(docSnap: FirebaseFirestore.QueryDocumentSnapshot | FirebaseFirestore.DocumentSnapshot): ClientDoc {
@@ -137,6 +141,10 @@ function parseDoc(docSnap: FirebaseFirestore.QueryDocumentSnapshot | FirebaseFir
     updatedAt: tsToDate(d.updatedAt),
     createdBy: d.createdBy || "",
     createdByName: d.createdByName || "",
+    dealValue: d.dealValue || 0,
+    source: d.source || "",
+    tags: d.tags || [],
+    lastContactedAt: tsToDate(d.lastContactedAt),
   };
 }
 
@@ -149,8 +157,11 @@ function formatClientBrief(c: ClientDoc): string {
   const interCount = c.interactions.length;
 
   let line = `• ${c.name}  |  ${stage}`;
+  if (c.dealValue > 0) line += `  |  $${c.dealValue.toLocaleString()}`;
   if (c.createdByName) line += `  |  👤 ${c.createdByName}`;
   if (location) line += `\n  📍 ${location}`;
+  if (c.source) line += `  (via ${c.source})`;
+  if (c.tags.length > 0) line += `\n  🏷️ ${c.tags.join(", ")}`;
 
   const contacts: string[] = [];
   if (c.email) contacts.push(`✉️ ${c.email}`);
@@ -193,7 +204,11 @@ Etapa:       ${stage}
 Email:       ${c.email || "—"}
 Teléfono:    ${c.phone || "—"}
 Ubicación:   ${location || "—"}
+Valor:       ${c.dealValue > 0 ? `$${c.dealValue.toLocaleString()}` : "—"}
+Fuente:      ${c.source || "—"}
+Tags:        ${c.tags.length > 0 ? c.tags.join(", ") : "—"}
 Owner:       ${c.createdByName || "—"}
+Últ. contacto: ${formatDate(c.lastContactedAt)}${c.lastContactedAt ? ` (hace ${daysSince(c.lastContactedAt)} días)` : ""}
 Creado:      ${formatDate(c.createdAt)}
 Actualizado: ${formatDate(c.updatedAt)}
 
@@ -479,8 +494,11 @@ server.tool(
     ciudad: z.string().optional().describe("Nueva ciudad"),
     pais: z.string().optional().describe("Nuevo país"),
     nota_emocional: z.string().optional().describe("Nueva nota emocional (el corazón del CRM: por qué conectaron con la obra)"),
+    valor: z.number().optional().describe("Nuevo valor estimado de la venta en USD"),
+    fuente: z.string().optional().describe("Nuevo origen del contacto"),
+    tags: z.array(z.string()).optional().describe("Reemplazar tags del cliente (array completo)"),
   },
-  async ({ id, nombre, email, telefono, ciudad, pais, nota_emocional }) => {
+  async ({ id, nombre, email, telefono, ciudad, pais, nota_emocional, valor, fuente, tags }) => {
     try {
       const docRef = db.collection(COLLECTION).doc(id);
       const docSnap = await docRef.get();
@@ -498,6 +516,9 @@ server.tool(
       if (ciudad !== undefined) { updates.city = ciudad; changes.push(`Ciudad → ${ciudad}`); }
       if (pais !== undefined) { updates.country = pais; changes.push(`País → ${pais}`); }
       if (nota_emocional !== undefined) { updates.emotionalNote = nota_emocional; changes.push(`Nota emocional → "${nota_emocional}"`); }
+      if (valor !== undefined) { updates.dealValue = valor; changes.push(`Valor → $${valor.toLocaleString()}`); }
+      if (fuente !== undefined) { updates.source = fuente; changes.push(`Fuente → ${fuente}`); }
+      if (tags !== undefined) { updates.tags = tags; changes.push(`Tags → [${tags.join(", ")}]`); }
 
       if (changes.length === 0) {
         return { content: [{ type: "text" as const, text: "No se proporcionaron campos para actualizar." }] };
@@ -747,12 +768,246 @@ Vencidos:          ${overdue.length}
   }
 );
 
+// ═══════════════════════════════════════════════════════════
+// TOOL 10: crear_cliente
+// ═══════════════════════════════════════════════════════════
+server.tool(
+  "crear_cliente",
+  "Crea un nuevo cliente en el CRM. Campos obligatorios: nombre y nota emocional. El resto es opcional. Retorna el ID del nuevo cliente.",
+  {
+    nombre: z.string().describe("Nombre del cliente (obligatorio)"),
+    nota_emocional: z.string().describe("Nota emocional: por qué conectó con la obra (obligatorio)"),
+    email: z.string().optional().describe("Email del cliente"),
+    telefono: z.string().optional().describe("Teléfono del cliente"),
+    ciudad: z.string().optional().describe("Ciudad"),
+    pais: z.string().optional().describe("País"),
+    etapa: z.enum(VALID_STAGES).default("interes_nuevo").describe("Etapa inicial del pipeline"),
+    valor: z.number().optional().describe("Valor estimado de la venta en USD"),
+    fuente: z.string().optional().describe("Origen del contacto (Gallery Visit, Instagram, Referral, Art Fair, Website, Other)"),
+    tags: z.array(z.string()).optional().describe("Etiquetas para segmentar (ej: VIP, Coleccionista)"),
+    accion: z.enum(VALID_ACTIONS).optional().describe("Próxima acción de seguimiento"),
+    fecha_accion: z.string().optional().describe("Fecha del seguimiento en formato YYYY-MM-DD"),
+    descripcion_accion: z.string().optional().describe("Descripción de la acción"),
+  },
+  async ({ nombre, nota_emocional, email, telefono, ciudad, pais, etapa, valor, fuente, tags, accion, fecha_accion, descripcion_accion }) => {
+    try {
+      const docData: Record<string, unknown> = {
+        name: nombre,
+        emotionalNote: nota_emocional,
+        email: email || "",
+        phone: telefono || "",
+        city: ciudad || "",
+        country: pais || "",
+        stage: etapa,
+        dealValue: valor || 0,
+        source: fuente || "",
+        tags: tags || [],
+        nextActionDescription: descripcion_accion || "",
+        interestedArtworks: [],
+        interactions: [],
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      };
+
+      if (accion) docData.nextAction = accion;
+      if (fecha_accion) {
+        const parsed = new Date(fecha_accion + "T00:00:00");
+        if (!isNaN(parsed.getTime())) docData.nextActionDate = Timestamp.fromDate(parsed);
+      }
+
+      const docRef = await db.collection(COLLECTION).add(docData);
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: `✅ Cliente "${nombre}" creado con éxito.\n   ID: ${docRef.id}\n   Etapa: ${STAGE_LABELS[etapa] || etapa}${valor ? `\n   Valor: $${valor.toLocaleString()}` : ""}${accion ? `\n   Próxima acción: ${ACTION_LABELS[accion] || accion} (${fecha_accion || "sin fecha"})` : ""}`,
+        }],
+      };
+    } catch (err) {
+      return { content: [{ type: "text" as const, text: `Error creando cliente: ${err}` }], isError: true };
+    }
+  }
+);
+
+// ═══════════════════════════════════════════════════════════
+// TOOL 11: eliminar_cliente
+// ═══════════════════════════════════════════════════════════
+server.tool(
+  "eliminar_cliente",
+  "Elimina un cliente del CRM de forma permanente. Usa con precaución — se recomienda mover a 'completado' en vez de borrar.",
+  {
+    id: z.string().describe("ID del cliente a eliminar"),
+    confirmar: z.boolean().describe("Debe ser true para confirmar la eliminación"),
+  },
+  async ({ id, confirmar }) => {
+    try {
+      if (!confirmar) {
+        return { content: [{ type: "text" as const, text: "Eliminación cancelada. Envía confirmar=true para proceder.\n💡 Tip: Considera mover al cliente a etapa 'completado' en vez de borrar." }] };
+      }
+
+      const docRef = db.collection(COLLECTION).doc(id);
+      const docSnap = await docRef.get();
+
+      if (!docSnap.exists) {
+        return { content: [{ type: "text" as const, text: `Cliente con ID "${id}" no encontrado.` }] };
+      }
+
+      const name = docSnap.data()?.name || "Cliente";
+      await docRef.delete();
+
+      return {
+        content: [{ type: "text" as const, text: `🗑️ Cliente "${name}" eliminado permanentemente.` }],
+      };
+    } catch (err) {
+      return { content: [{ type: "text" as const, text: `Error eliminando cliente: ${err}` }], isError: true };
+    }
+  }
+);
+
+// ═══════════════════════════════════════════════════════════
+// TOOL 12: ritual_diario
+// ═══════════════════════════════════════════════════════════
+server.tool(
+  "ritual_diario",
+  "Muestra exactamente lo que ve el usuario en la vista Daily Ritual: follow-ups vencidos y pendientes para hoy, ordenados por urgencia. Incluye prioridad #1 con nota emocional.",
+  {
+    owner: z.string().optional().describe("Filtrar por email del owner"),
+  },
+  async ({ owner }) => {
+    try {
+      const snap = await db.collection(COLLECTION).get();
+      let clients = snap.docs.map(parseDoc);
+
+      if (owner) {
+        const ownerLower = owner.toLowerCase();
+        clients = clients.filter(c => c.createdByName.toLowerCase().includes(ownerLower));
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const ritual = clients
+        .filter(c => c.nextActionDate && c.nextActionDate < tomorrow)
+        .sort((a, b) => (a.nextActionDate?.getTime() || 0) - (b.nextActionDate?.getTime() || 0));
+
+      if (ritual.length === 0) {
+        return { content: [{ type: "text" as const, text: "☀️ Tu lista está limpia. No hay seguimientos pendientes para hoy.\nUsa este tiempo para conectar con nuevos prospectos." }] };
+      }
+
+      const overdue = ritual.filter(c => c.nextActionDate! < today);
+      const todayOnly = ritual.filter(c => c.nextActionDate! >= today);
+      const priority = ritual[0];
+
+      let text = `☀️ RITUAL DIARIO\n═══════════════════════════════════════\n`;
+      text += `${overdue.length} vencido(s), ${todayOnly.length} para hoy — ${ritual.length} total\n`;
+
+      text += `\n🎯 PRIORIDAD #1: ${priority.name}`;
+      text += `\n   ${priority.nextAction ? ACTION_LABELS[priority.nextAction] || priority.nextAction : "Pendiente"}`;
+      if (priority.nextActionDate) text += ` (${daysSince(priority.nextActionDate)} días de retraso)`;
+      if (priority.nextActionDescription) text += `\n   "${priority.nextActionDescription}"`;
+      text += `\n   💚 "${priority.emotionalNote}"`;
+
+      if (overdue.length > 0) {
+        text += `\n\n⚠️ VENCIDOS (${overdue.length}):`;
+        for (const c of overdue) {
+          const action = c.nextAction ? ACTION_LABELS[c.nextAction] || c.nextAction : "Pendiente";
+          const days = daysSince(c.nextActionDate);
+          text += `\n  • ${c.name} — ${action} (${days}d de retraso)`;
+          if (c.nextActionDescription) text += `\n    → ${c.nextActionDescription}`;
+        }
+      }
+
+      if (todayOnly.length > 0) {
+        text += `\n\n📅 PARA HOY (${todayOnly.length}):`;
+        for (const c of todayOnly) {
+          const action = c.nextAction ? ACTION_LABELS[c.nextAction] || c.nextAction : "Pendiente";
+          text += `\n  • ${c.name} — ${action}`;
+          if (c.nextActionDescription) text += `\n    → ${c.nextActionDescription}`;
+        }
+      }
+
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) {
+      return { content: [{ type: "text" as const, text: `Error obteniendo ritual diario: ${err}` }], isError: true };
+    }
+  }
+);
+
+// ═══════════════════════════════════════════════════════════
+// TOOL 13: clientes_enfriandose
+// ═══════════════════════════════════════════════════════════
+server.tool(
+  "clientes_enfriandose",
+  "Muestra contactos que se están 'enfriando': sin actividad en X días, sin follow-up programado, y que no están en etapa 'completado'. Estos clientes necesitan atención urgente.",
+  {
+    dias: z.number().min(1).default(7).describe("Días sin contacto para considerar 'enfriándose'"),
+    owner: z.string().optional().describe("Filtrar por email del owner"),
+  },
+  async ({ dias, owner }) => {
+    try {
+      const snap = await db.collection(COLLECTION).get();
+      let clients = snap.docs.map(parseDoc);
+
+      if (owner) {
+        const ownerLower = owner.toLowerCase();
+        clients = clients.filter(c => c.createdByName.toLowerCase().includes(ownerLower));
+      }
+
+      const threshold = new Date();
+      threshold.setDate(threshold.getDate() - dias);
+
+      const stale = clients.filter(c => {
+        if (c.stage === "completado") return false;
+        const lastContact = c.lastContactedAt || c.updatedAt;
+        if (!lastContact || lastContact >= threshold) return false;
+        // Extra: no tiene follow-up programado = más preocupante
+        return true;
+      }).sort((a, b) => {
+        const da = (a.lastContactedAt || a.updatedAt)?.getTime() || 0;
+        const db2 = (b.lastContactedAt || b.updatedAt)?.getTime() || 0;
+        return da - db2; // Más tiempo sin contacto primero
+      });
+
+      if (stale.length === 0) {
+        return { content: [{ type: "text" as const, text: `✅ No hay clientes enfriándose (>${dias} días sin contacto). ¡Buen trabajo!` }] };
+      }
+
+      let text = `🥶 CLIENTES ENFRIÁNDOSE (>${dias} días sin contacto)\n═══════════════════════════════════════\n${stale.length} cliente(s) necesitan atención:\n`;
+
+      for (const c of stale.slice(0, 20)) {
+        const lastContact = c.lastContactedAt || c.updatedAt;
+        const days = daysSince(lastContact);
+        const stage = STAGE_LABELS[c.stage] || c.stage;
+        const hasAction = c.nextAction ? "✅ tiene acción" : "❌ sin acción";
+        text += `\n• ${c.name}  |  ${stage}  |  ${days}d sin contacto  |  ${hasAction}`;
+        if (c.dealValue > 0) text += `  |  $${c.dealValue.toLocaleString()}`;
+        text += `\n  💚 "${c.emotionalNote.substring(0, 60)}${c.emotionalNote.length > 60 ? "..." : ""}"`;
+      }
+
+      if (stale.length > 20) text += `\n\n... y ${stale.length - 20} más`;
+
+      // Resumen
+      const noAction = stale.filter(c => !c.nextAction).length;
+      const withValue = stale.filter(c => c.dealValue > 0);
+      const totalValue = withValue.reduce((sum, c) => sum + (c.dealValue || 0), 0);
+      text += `\n\n📊 Resumen: ${noAction} sin acción programada`;
+      if (totalValue > 0) text += `, $${totalValue.toLocaleString()} en valor de pipeline en riesgo`;
+
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) {
+      return { content: [{ type: "text" as const, text: `Error obteniendo clientes enfriándose: ${err}` }], isError: true };
+    }
+  }
+);
+
 // ─── Start Server ──────────────────────────────────────────
 
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("CRM MCP Server running (stdio) — 9 tools available");
+  console.error("CRM MCP Server running (stdio) — 13 tools available");
 }
 
 main().catch((err) => {
